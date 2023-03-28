@@ -1,0 +1,1 @@
+pub const BACKEND_URI: &str = "http://localhost:8000";

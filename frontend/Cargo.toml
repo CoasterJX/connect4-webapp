@@ -1,0 +1,19 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = { version = "0.20", features = ["csr"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4.34"
+web-sys = { version = "0.3.56", features = ["HtmlInputElement", "Navigator", "HtmlHeadingElement"] }
+gloo = "0.8.0"
+yew-router = "0.17"
+getrandom = { version = "0.2", features = ["js"] }
+serde = "1.0.136"
+serde_json = "1"
+futures = "0.3"
+reqwest-wasm = { version = "0.11.16", features = ["json", "blocking"] }
