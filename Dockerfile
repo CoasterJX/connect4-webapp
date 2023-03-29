@@ -24,4 +24,6 @@ RUN set -ex \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir /app
 
+ENV MONGOURI=mongodb://172.24.151.11:8080
+
 WORKDIR /app
