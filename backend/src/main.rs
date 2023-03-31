@@ -6,9 +6,19 @@ mod repository;
 extern crate rocket;
 
 use api::user_api::*;
-use repository::mongodb_repo::MongoRepo;
-use rocket::{http::{Method, Header}, get, routes, Request, Response};
-use rocket::fairing::{Fairing, Info, Kind};
+use repository::user_repo::UserRepo;
+use rocket::{
+    http::Header,
+    routes,
+    Request,
+    Response
+};
+
+use rocket::fairing::{
+    Fairing,
+    Info,
+    Kind
+};
 
 pub struct Cors;
 
@@ -45,7 +55,7 @@ fn rocket() -> _ {
     //     ..Default::default()
     // }.to_cors().unwrap();
 
-    let db = MongoRepo::init();
+    let db = UserRepo::init();
     rocket::build()
         .attach(Cors)
         .manage(db)
@@ -53,5 +63,5 @@ fn rocket() -> _ {
         .mount("/", routes![get_user])
         .mount("/", routes![get_all_users])
         .mount("/", routes![verify_pwd])
-        .mount("/", routes![options_verify_user])
+        .mount("/", routes![placeholder])
 }

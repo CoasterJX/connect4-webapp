@@ -1,70 +1,94 @@
 use std::path::PathBuf;
 
-use crate::{models::user_model::*, repository::mongodb_repo::MongoRepo};
-use mongodb::results::InsertOneResult;
-use rocket::{http::Status, serde::json::Json, State, Response, fs::NamedFile};
+use crate::{
+    models::{
+        user_model::*,
+        general_model::GeneralStatus
+    },
+    repository::user_repo::UserRepo
+};
+
+use rocket::{
+    http::Status,
+    serde::json::Json,
+    State
+};
 
 extern crate argon2;
 
 
+#[options("/<_p..>")]
+pub fn placeholder(_p: PathBuf) -> Result<(), ()> {
+    Ok(())
+}
+
+
 #[post("/user/create", data = "<new_user>")]
-pub fn create_user(db: &State<MongoRepo>, new_user: Json<User>) -> Result<Json<User>, Status> {
+pub fn create_user(db: &State<UserRepo>, new_user: Json<User>) -> Result<Json<GeneralUserResponse>, Status> {
 
-    let data = User {
-        id: None,
-        name: new_user.name.to_owned(),
-        location: new_user.location.to_owned(),
-        title: new_user.title.to_owned(),
-        pwd: argon2::hash_encoded(
-            new_user.pwd.as_bytes(),
-            b"randomsalt",
-            &argon2::Config::default()
-        ).unwrap(),
-    };
+    let user = User::new(new_user.name.clone(), new_user.pwd.clone());
+    match db.create_user(user.clone()) {
 
-    match db.create_user(data.clone()) {
-        Ok(_user) => Ok(Json(data)),
-        Err(_) => Err(Status::InternalServerError),
+        true => Ok(Json(GeneralUserResponse {
+            status: GeneralStatus::success(),
+            user: user.clone(),
+        })),
+
+        false => Ok(Json(GeneralUserResponse {
+            status: GeneralStatus::failure("User already exists or database not connected."),
+            user: user.clone(),
+        }))
     }
 }
 
 
 #[post("/user/verify", data = "<user>")]
-pub fn verify_pwd(db: &State<MongoRepo>, user: Json<User>) -> Result<Json<PwdVerify>, Status> {
+pub fn verify_pwd(db: &State<UserRepo>, user: Json<User>) -> Result<Json<PwdVerifyResponse>, Status> {
 
-    let data = PwdVerify {
-        exists: db.verify_pwd(&user.name, &user.pwd)
-    };
-    Ok(Json(data))
-}
-
-
-#[options("/<p..>")]
-pub fn options_verify_user(p: PathBuf) -> Result<(), ()> {
-    Ok(())
+    Ok(Json(PwdVerifyResponse {
+        status: GeneralStatus::success(),
+        exists: db.verify_pwd(&user.name, &user.pwd),
+    }))
 }
 
 
 #[get("/user/info/<path>")]
-pub fn get_user(db: &State<MongoRepo>, path: String) -> Result<Json<User>, Status> {
+pub fn get_user(db: &State<UserRepo>, path: String) -> Result<Json<GeneralUserResponse>, Status> {
 
     let name = path;
     if name.is_empty() {
-        return Err(Status::BadRequest);
+        return Ok(Json(GeneralUserResponse {
+            status: GeneralStatus::failure("Name cannot be empty."),
+            user: User::empty(),
+        }));
     };
     
     match db.get_user(&name) {
-        Ok(user) => Ok(Json(user)),
-        Err(_) => Err(Status::InternalServerError),
+
+        Some(user) => Ok(Json(GeneralUserResponse {
+            status: GeneralStatus::success(),
+            user
+        })),
+
+        None => Ok(Json(GeneralUserResponse {
+            status: GeneralStatus::failure("User does not exists or database not connected."),
+            user: User::empty()
+        })),
     }
 }
 
 
 #[get("/user/all")]
-pub fn get_all_users(db: &State<MongoRepo>) -> Result<Json<Vec<User>>, Status> {
+pub fn get_all_users(db: &State<UserRepo>) -> Result<Json<GetAllUserResonse>, Status> {
     
     match db.get_all_users() {
-        Ok(users) => Ok(Json(users)),
-        Err(_) => Err(Status::InternalServerError),
+        Some(all_users) => Ok(Json(GetAllUserResonse {
+            status: GeneralStatus::success(),
+            all_users
+        })),
+        None => Ok(Json(GetAllUserResonse {
+            status: GeneralStatus::failure("Database not connected."),
+            all_users: vec![]
+        })),
     }
 }
