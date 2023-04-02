@@ -6,7 +6,9 @@ mod repository;
 extern crate rocket;
 
 use api::user_api::*;
+use api::board_api::*;
 use repository::user_repo::UserRepo;
+use repository::board_repo::BoardRepo;
 use rocket::{
     http::Header,
     routes,
@@ -56,12 +58,17 @@ fn rocket() -> _ {
     // }.to_cors().unwrap();
 
     let db = UserRepo::init();
+    let db_board = BoardRepo::init();
     rocket::build()
         .attach(Cors)
         .manage(db)
+        .manage(db_board)
         .mount("/", routes![create_user])
         .mount("/", routes![get_user])
         .mount("/", routes![get_all_users])
         .mount("/", routes![verify_pwd])
         .mount("/", routes![placeholder])
+        .mount("/", routes![create_board])
+        .mount("/", routes![get_board])
+        .mount("/", routes![get_all_boards])
 }
