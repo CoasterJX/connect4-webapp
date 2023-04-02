@@ -11,15 +11,25 @@ use yew_router::{navigator, prelude::*};
 pub fn side_bar() -> Html {
     html! {
         <div>
-        <style>
-            {"body,h1,h2,h3,h4,h5 {font-family: 'Poppins', sans-serif}"}
-        </style>
-        <div class="sidenav">
-            <button>{"About"}</button>
-            <a href="/login">{"Services"}</a>
-            <a href="#">{"Clients"}</a>
-            <a href="#">{"Contact"}</a>
-        </div>
+            <style>
+                {"body,h1,h2,h3,h4,h5 {font-family: 'Poppins', sans-serif}"}
+            </style>
+            <div class="sidenav" id="sidenav">
+                <h1 >{"Play Connect4 / TOOT-OTTO"}</h1><br />
+
+                <a href="/user/register">{"Register"}</a><br /><br />
+
+                <a href="/user/guide">{"How to Play Connect4"}</a>
+                <a href="/user/play-computer">{"Play Connect4 With Computer"}</a>
+                <a href="/user/play-human">{"PlayConnect4 with Another Player"}</a><br /><br />
+
+                <a href="/user/guide-TOOT">{"How to Play TOOT-OTTO"}</a>
+                <a href="/user/play-computer-TOOT">{"Play TOOT-OTTO With Computer"}</a>
+                <a href="/user/play-human-TOOT">{"Play TOOT-OTTO With Another Player"}</a><br /><br />
+
+                <a href="/user/history">{"View Game History"}</a>
+                <a href="/user/scoreboard">{"Score Board"}</a><br /><br />
+            </div>
         </div>
     }
 }

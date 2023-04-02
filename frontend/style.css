@@ -1,44 +1,114 @@
 body {
-    background-color: black;
+    background-color: white;
+    position:relative;
+    margin: 0;
 }
 
 div {
-    margin-top: 35px;
+    margin-top: 0px;
     text-align: left;
-    color: white;
+    color: black;
     font-family: Cubano;
 }
 
 h1 {
-    font-size: 40px;
+    color: #ffffff;
+    font-size: 32px;
 }
 
+h5 {
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+p {
+  text-indent: 0px;
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  text-align: justify;
+}
+
+input{
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+
 button {
-    width: 80px;
-    height: 20px;
+    width: fit-content;
+    /* height: 20px; */
     font-size: 15px;
     font-family: Cubano;
-    color: white;
+    color: black;
     text-align: center;
-    background-color: green;
+    /* background-color: green; */
     border-width: 0px;
     margin-left: 10px;
     margin-right: 10px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border: 1px solid black;
+    border-radius: 2px;
+
+}
+
+button:hover{
+  background-color: rgb(200, 200, 200)
+}
+
+li {
+    display: list-item;
+    text-align: -webkit-match-parent;
+}
+
+ul {
+    list-style-type: disc;
+}
+
+img {
+  width: 10%;
+  height: auto;
+}
+
+::marker {
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  text-indent: 0px !important;
+  text-align: start !important;
+  text-align-last: start !important;
+}
+
+.flex-container{
+  display: flex;
+}
+
+.sidenavpadding{
+  padding-left: 320px;
+  padding-right: 60px;
 }
 
 /* The sidebar menu */
 .sidenav {
     height: 100%; /* Full-height: remove this if you want "auto" height */
-    width: 160px; /* Set the width of the sidebar */
+    width: 240px; /* Set the width of the sidebar */
     position: fixed; /* Fixed Sidebar (stay in place on scroll) */
     z-index: 1; /* Stay on top */
     top: 0; /* Stay at the top */
     left: 0;
-    background-color: #111; /* Black */
+    /* background-color: #f44336; */
+    background-color: #000000;
     overflow-x: hidden; /* Disable horizontal scroll */
     padding-top: 20px;
+    padding-left: 24px;
+    padding-right: 24px;
+    font: 1em sans-serif;
+    font-weight: bold;
+    overflow: hidden; /* Hide scrollbars */
   }
 
   .dif {
@@ -58,22 +128,23 @@ button {
 
 /* The navigation menu links */
 .sidenav a {
-    padding: 6px 8px 6px 16px;
+    padding: 6px 8px 6px 8px;
     text-decoration: none;
-    font-size: 25px;
-    color: #818181;
+    font-size: 20px;
+    color: #ffffff;
     display: block;
   }
   
   /* When you mouse over the navigation links, change their color */
   .sidenav a:hover {
-    color: #f1f1f1;
+    color: #000000;
+    background-color: #ffffff;
   }
   
   /* Style page content */
   .main {
     margin-left: 160px; /* Same as the width of the sidebar */
-    padding: 0px 10px;
+    padding: 10px 10px;
   }
   
   /* On smaller screens, where height is less than 450px, change the style of the sidebar (less padding and a smaller font size) */
