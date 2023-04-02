@@ -146,8 +146,63 @@ impl Board {
         } else if self.is_draw() {
             return 0;
         } else {
-            return 0  // In this case the board does not represent a terminal state and will return 0.
+            return 2  // In this case the board does not represent a terminal state and will return the dummy value 2.
         }
+    }
+
+    /*
+        This function receives a player denoted as either 'X' or 'O' representing the current
+        player who is to move. The parameters 'alpha' and 'beta' are used to prune the search
+        tree. The parameter 'ply' represents the depth of the depth. Increasing the 'ply' value
+        returns better moves but also takes longer.
+
+        The function returns two values:
+        1. the score of the optimal move for the player who is to act;
+        2. the optimal move
+    */
+    pub fn alpha_beta(&mut self, player: String, alpha: &mut i64, beta: &mut i64, ply: i64) -> (i64, i64) {
+        if self.is_terminal() {
+            return (self.game_value(), 0);
+        }
+        if ply <= 0 {
+            return (0, 0);
+        }
+        let mut m: i64 = if player == 'X'.to_string() {-2} else {2};
+        let mut optimal_move: i64 = 0;
+        for a in self.available_moves() {
+            if player == 'O'.to_string() {
+                self.perform_move(a.clone(), 'O'.to_string());
+                let (v, _) = self.alpha_beta('X'.to_string(), alpha, beta, ply - 1);
+                if v == 2 {  // 2 is a dummy value that represents a non-terminal state was found.
+                } else {
+                    m = min(m, v.clone());
+                }
+                self.undo_move(a.clone());
+                if alpha >= &mut m {
+                    return (m, 0);
+                }
+                if &mut m < beta {
+                    *beta = m;
+                    optimal_move = a.clone();
+                }
+            } else {
+                self.perform_move(a.clone(), 'X'.to_string());
+                let (v, _) = self.alpha_beta('O'.to_string(), alpha, beta, ply - 1);
+                if v == 2 {  // 2 is a dummy value that represents a non-terminal state was found.
+                } else {
+                    m = max(m, v.clone());
+                }
+                self.undo_move(a.clone());
+                if beta <= &mut m {
+                    return (m, 0);
+                }
+                if &mut m > alpha {
+                    *alpha = m;
+                    optimal_move = a.clone();
+                }
+            }
+        }
+        return (m, optimal_move);
     }
 }
 
