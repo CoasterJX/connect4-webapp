@@ -1,12 +1,17 @@
 use super::general_elements::SideBar;
 use super::settings::BACKEND_URI;
 use futures::future::Lazy;
+use gloo::timers::future::sleep;
 use gloo::{console::log, utils::document};
 use serde_json::json;
+use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
 use std::{sync::Mutex, thread};
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{Element, Event, HtmlDivElement, HtmlHeadingElement, HtmlInputElement, MouseEvent};
+use web_sys::{
+    Element, Event, HtmlDivElement, HtmlHeadingElement, HtmlImageElement, HtmlInputElement,
+    MouseEvent,
+};
 use yew::{function_component, html, Callback, Html};
 use yew_router::{navigator, prelude::*};
 
@@ -141,6 +146,8 @@ fn user_login() -> Html {
 #[function_component(UserRegister)]
 
 fn user_register() -> Html {
+    let navigator = use_navigator().unwrap();
+
     let register_onclick = Callback::from(move |_event: MouseEvent| {
         let name_input = document()
             .get_element_by_id("register-name")
@@ -165,44 +172,58 @@ fn user_register() -> Html {
                 .unwrap()
                 .set_inner_html("Register failed! Do not include \"_\" in your username.");
         } else {
-            let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
+            let create_user_uri = format!("{}/user/create", BACKEND_URI);
             let get_user_uri =
                 format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
+            log!("Here");
 
-            // wasm_bindgen_futures::spawn_local(async move {
-            //     let client = reqwest_wasm::Client::new();
-            //     let response = client
-            //         .post(verify_user_uri)
-            //         .json(&json!({
-            //             "name": name_input,
-            //             "location": "",
-            //             "title": "",
-            //             "pwd": pwd_input
-            //         }))
-            //         .send()
-            //         .await
-            //         .unwrap()
-            //         .json::<serde_json::Value>()
-            //         .await
-            //         .unwrap();
-            //     if !response["status"]["success"].as_bool().unwrap() {
-            //         document()
-            //             .get_element_by_id("login-err-msg")
-            //             .unwrap()
-            //             .dyn_into::<HtmlHeadingElement>()
-            //             .unwrap()
-            //             .set_inner_html("Register failed! {append error message}.");
-            //         //.set_node_value(Some("Login failed! Check your user name & password."));
-            //     } else {
-            //         let user = reqwest_wasm::get(get_user_uri)
-            //             .await
-            //             .unwrap()
-            //             .json::<serde_json::Value>()
-            //             .await
-            //             .unwrap();
-            //         log!(user["title"].to_string());
-            //     }
-            // });
+            let registernav = navigator.clone();
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let client = reqwest_wasm::Client::new();
+                let response = client
+                    .post(create_user_uri)
+                    .json(&json!({
+                        "name": name_input,
+                        "pwd": pwd_input,
+                        "score": 0
+                    }))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json::<serde_json::Value>()
+                    .await
+                    .unwrap();
+
+                log!("Here2");
+
+                if !response["status"]["success"].as_bool().unwrap() {
+                    let errormessage = response["status"]["msg"]
+                        .to_string()
+                        .replace("\\", "")
+                        .replace("\"", "");
+
+                    log!("Here4");
+                    document()
+                        .get_element_by_id("register-msg")
+                        .unwrap()
+                        .dyn_into::<HtmlHeadingElement>()
+                        .unwrap()
+                        .set_inner_html(format!("Register failed! {}", errormessage).as_str());
+                    //.set_node_value(Some("Login failed! Check your user name & password."));
+                } else {
+                    log!("Here3");
+                    let _ = document()
+                        .get_element_by_id("register-msg")
+                        .unwrap()
+                        .dyn_into::<HtmlHeadingElement>()
+                        .unwrap()
+                        .set_inner_html("Register success!");
+
+                    let _ = sleep(Duration::new(5, 0));
+                    registernav.push(&UserRoute::UserGuide);
+                }
+            });
         }
     });
 
@@ -242,7 +263,83 @@ fn user_guide() -> Html {
 
 #[function_component(UserPlayComputer)]
 fn user_play_computer() -> Html {
-    // let _ = document()
+    let navigator = use_navigator().unwrap();
+
+    let login_onclick = Callback::from(move |_event: MouseEvent| {
+        let name_input = document()
+            .get_element_by_id("player-name")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let pwd_input = document()
+            .get_element_by_id("player-pwd")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        if name_input.contains("_") {
+            log!("Error");
+            let _ = document()
+                .get_element_by_id("login-msg")
+                .unwrap()
+                .dyn_into::<HtmlHeadingElement>()
+                .unwrap()
+                .set_inner_html("Login failed! Do not include \"_\" in your username.");
+        } else {
+            let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
+            // let get_user_uri =
+            //     format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
+            log!("Here");
+
+            // let registernav = navigator.clone();
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let client = reqwest_wasm::Client::new();
+                let response = client
+                    .post(verify_user_uri)
+                    .json(&json!({
+                        "name": name_input,
+                        "pwd": pwd_input,
+                        "score": 1
+                    }))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json::<serde_json::Value>()
+                    .await
+                    .unwrap();
+
+                log!("Here2");
+
+                if !response["exists"].as_bool().unwrap() {
+                    // let errormessage = response["status"]["msg"]
+                    //     .to_string()
+                    //     .replace("\\", "")
+                    //     .replace("\"", "");
+
+                    log!("Here4");
+                    document()
+                        .get_element_by_id("login-msg")
+                        .unwrap()
+                        .dyn_into::<HtmlHeadingElement>()
+                        .unwrap()
+                        .set_inner_html("Login failed! User password combination does not exist!");
+                    //.set_node_value(Some("Login failed! Check your user name & password."));
+                } else {
+                    log!("Here3");
+                    let _ = document()
+                        .get_element_by_id("dimension-prompt")
+                        .unwrap()
+                        .dyn_into::<HtmlDivElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: ");
+                }
+            });
+        }
+    });
 
     let generateBoard = Callback::from(move |_event: MouseEvent| {
         let width = document()
@@ -259,7 +356,8 @@ fn user_play_computer() -> Html {
             .unwrap()
             .value();
 
-        let singleCell = "<img src= \"https:\\/\\/i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png\" alt=\"Cell\" />";
+        let singleCell =
+            "<img src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
         let mut finalRow = String::from("");
         for i in 0..width.parse().unwrap() {
             finalRow += singleCell;
@@ -273,38 +371,39 @@ fn user_play_computer() -> Html {
         }
 
         let _ = document()
-            .get_element_by_id("test")
+            .get_element_by_id("board")
             .unwrap()
             .dyn_into::<HtmlDivElement>()
             .unwrap()
             .set_inner_html((&finalString).as_str());
-    });
-
-    let imagetest = Callback::from(move |_event: MouseEvent| {
-        log! {"Success!"};
-    });
-
-    let showDimensionPrompt = Callback::from(move |_event: MouseEvent| {
-        let username = document()
-            .get_element_by_id("player-name")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let userpassword = document()
-            .get_element_by_id("player-password")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
 
         let _ = document()
             .get_element_by_id("dimension-prompt")
             .unwrap()
             .dyn_into::<HtmlDivElement>()
             .unwrap()
+            .set_attribute("style", "display: none");
+
+        log!("Here5");
+        let _ = document()
+            .get_element_by_id("column-prompt")
+            .unwrap()
+            .dyn_into::<HtmlDivElement>()
+            .unwrap()
             .set_attribute("style", "display: ");
+    });
+
+    let makeMove = Callback::from(move |_event: MouseEvent| {
+        // Make the move
+    });
+
+    let testing = Callback::from(move |_event: MouseEvent| {
+        let _ = document()
+            .get_element_by_id("1")
+            .unwrap()
+            .dyn_into::<HtmlImageElement>()
+            .unwrap()
+            .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
     });
     //<div class=\"flex-container\"><img src= \"https:\\/\\/i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png\" alt=\"Cell\"/></div>
     html! {
@@ -313,10 +412,11 @@ fn user_play_computer() -> Html {
                 <h5 style="padding-top: 72px">{"Enter your name"}</h5>
                 <div class="flex-container">
                     <input id="player-name" placeholder="Your name" style="margin-left: 0px"/>
-                    <input id="player-password" placeholder="Password" style="margin-left: 0px"/>
-                    <button class="button" onclick={showDimensionPrompt}>{ "Start game" }</button>
+                    <input id="player-pwd" placeholder="Password" style="margin-left: 0px"/>
+                    <button class="button" onclick={login_onclick}>{ "Start game" }</button>
                 </div>
 
+                <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
 
                 <div id="dimension-prompt" style="display: none">
                     <h5>{"Enter board dimensions"}</h5>
@@ -326,16 +426,21 @@ fn user_play_computer() -> Html {
                         <button class="button" onclick={generateBoard}>{ "Generate" }</button>
                     </div>
                 </div>
+
+                <div id="column-prompt" style="display: none">
+                    <div class="flex-container" >
+                        <input id="column-number" placeholder="Column number" style="margin-left: 0px"/>
+                        <button class="button" onclick={makeMove}>{ "Confirm" }</button>
+                    </div>
+                </div>
             </div><br />
 
-            <div id="test">
+            <div id = "board">
+                // Board goes here
+            </div><br/>
 
-            </div>
-            // <div id = "board">
-            //     <div class="flex-container">
-            //         <img src= "https://i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png" alt="Cell" onclick={imagetest}/>
-            //     </div>
-            // </div>
+            <img id = "1" src= "https://i.ibb.co/GFk3XzG/cell-empty.png" alt="Cell" />
+            <button class="button" onclick={testing}>{ "test" }</button>
         </div>
     }
 }
