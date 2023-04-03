@@ -104,18 +104,24 @@ impl Board {
         let ox = self.last_player.clone();
         
         // No moves made on the board so far
-        if row != -1 {
+        if row == -1 && col == -1 {
             return false;
         }
         // Checks to see if there is a horizontal win
         for c in max(0, col - 3)..min(self.width-3, col+1) {
-            if self.board[row as usize][c as usize] == ox && self.board[row as usize][(c+1) as usize] == ox && self.board[row as usize][(c+2) as usize] == ox && self.board[row as usize][(c+3) as usize] == ox {
+            if self.board[row as usize][c as usize] == ox
+            && self.board[row as usize][(c+1) as usize] == ox
+            && self.board[row as usize][(c+2) as usize] == ox
+            && self.board[row as usize][(c+3) as usize] == ox {
                 return true;
             }
         }
         // Checks to see if there is a vertical win
         if row < self.height - 3 {
-            if self.board[row as usize][col as usize] == ox && self.board[(row+1) as usize][col as usize] == ox && self.board[(row+2) as usize][col as usize] == ox && self.board[(row+3) as usize][col as usize] == ox {
+            if self.board[row as usize][col as usize] == ox
+            && self.board[(row+1) as usize][col as usize] == ox
+            && self.board[(row+2) as usize][col as usize] == ox
+            && self.board[(row+3) as usize][col as usize] == ox {
                 return true;
             }
         }
@@ -124,7 +130,10 @@ impl Board {
             let r = row - i;
             let c = col - i;
             if 0 <= r && r < self.height-3 && 0 <= c && c < self.width-3 {
-                if self.board[r as usize][c as usize] == ox && self.board[(r+1) as usize][(c+1) as usize] == ox && self.board[(r+2) as usize][(c+2) as usize] == ox && self.board[(r+3) as usize][(c+3) as usize] == ox {
+                if self.board[r as usize][c as usize] == ox
+                && self.board[(r+1) as usize][(c+1) as usize] == ox
+                && self.board[(r+2) as usize][(c+2) as usize] == ox
+                && self.board[(r+3) as usize][(c+3) as usize] == ox {
                     return true;
                 }
             }
