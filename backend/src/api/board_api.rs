@@ -19,7 +19,7 @@ extern crate argon2;
 #[post("/board/create", data = "<new_board>")]
 pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Json<GeneralBoardResponse>, Status> {
 
-    let board_var = Board::new(new_board.width.clone(), new_board.height.clone(), new_board.player_1.clone(), new_board.player_2.clone());
+    let board_var = Board::new(new_board.width.clone(), new_board.height.clone(), new_board.player_1.clone(), new_board.player_2.clone(), new_board.mode.clone(), new_board.difficulty.clone());
     match db.create_board(board_var.clone()) {
 
         true => Ok(Json(GeneralBoardResponse {
