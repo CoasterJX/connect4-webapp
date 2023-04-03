@@ -9,7 +9,7 @@ edition = "2021"
 yew = { version = "0.20", features = ["csr"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.34"
-web-sys = { version = "0.3.56", features = ["HtmlInputElement", "Navigator", "HtmlHeadingElement", "HtmlDivElement"] }
+web-sys = { version = "0.3.56", features = ["HtmlInputElement", "HtmlImageElement", "Navigator", "HtmlHeadingElement", "HtmlDivElement"] }
 gloo = "0.8.0"
 yew-router = "0.17"
 getrandom = { version = "0.2", features = ["js"] }
