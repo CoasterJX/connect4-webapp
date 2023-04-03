@@ -110,7 +110,7 @@ impl Board {
         let ox = self.last_player.clone();
         
         // No moves made on the board so far
-        if row == -1 {
+        if row == -1 && col == -1 {
             return false;
         }
         // Checks to see if there is a horizontal win
