@@ -15,6 +15,8 @@ pub struct Board {
     pub last_player: String,
     pub player_1: String,
     pub player_2: String,
+    pub mode: String,
+    pub difficulty: i64,
 }
 
 impl Board {
@@ -62,10 +64,12 @@ impl Board {
             last_player: 'O'.to_string(),
             player_1: ' '.to_string(),
             player_2: ' '.to_string(),
+            mode: "computer-mode".to_string(),
+            difficulty: 1,
         }
     }
 
-    pub fn new(w: i64, h: i64, p1: String, p2: String) -> Self {
+    pub fn new(w: i64, h: i64, p1: String, p2: String, m: String, d: i64) -> Self {
         let mut board_init = vec![];
         for r in 0..h {
             board_init.push(vec![]);
@@ -82,6 +86,8 @@ impl Board {
             last_player: 'O'.to_string(),
             player_1: p1.to_owned(),
             player_2: p2.to_owned(),
+            mode: m.to_owned(),
+            difficulty: d,
         }
     }
 
@@ -104,18 +110,52 @@ impl Board {
         let ox = self.last_player.clone();
         
         // No moves made on the board so far
-        if row != -1 {
+        if row == -1 {
             return false;
         }
         // Checks to see if there is a horizontal win
         for c in max(0, col - 3)..min(self.width-3, col+1) {
-            if self.board[row as usize][c as usize] == ox && self.board[row as usize][(c+1) as usize] == ox && self.board[row as usize][(c+2) as usize] == ox && self.board[row as usize][(c+3) as usize] == ox {
+            //if self.board[row as usize][c as usize] == ox && self.board[row as usize][(c+1) as usize] == ox && self.board[row as usize][(c+2) as usize] == ox && self.board[row as usize][(c+3) as usize] == ox {
+                //return true;
+            //}
+            let ox_seq: String = (self.board[row as usize][c as usize].clone()
+                                + &self.board[row as usize][(c+1) as usize].clone()
+                                + &self.board[row as usize][(c+2) as usize].clone()
+                                + &self.board[row as usize][(c+3) as usize].clone())
+                                .chars()
+                                .map(|char| {
+                                    match char {
+                                        'X' => '1',
+                                        'T' => '1',
+                                        'O' => '0',
+                                        _ => ' ',
+                                    }
+                                })
+                                .collect();
+            if ox_seq == "1111".to_string() || ox_seq == "0000".to_string() {
                 return true;
             }
         }
         // Checks to see if there is a vertical win
         if row < self.height - 3 {
-            if self.board[row as usize][col as usize] == ox && self.board[(row+1) as usize][col as usize] == ox && self.board[(row+2) as usize][col as usize] == ox && self.board[(row+3) as usize][col as usize] == ox {
+            //if self.board[row as usize][col as usize] == ox && self.board[(row+1) as usize][col as usize] == ox && self.board[(row+2) as usize][col as usize] == ox && self.board[(row+3) as usize][col as usize] == ox {
+                //return true;
+            //}
+            let ox_seq: String = (self.board[row as usize][col as usize].clone()
+                                + &self.board[(row+1) as usize][col as usize].clone()
+                                + &self.board[(row+2) as usize][col as usize].clone()
+                                + &self.board[(row+3) as usize][col as usize].clone())
+                                .chars()
+                                .map(|char| {
+                                    match char {
+                                        'X' => '1',
+                                        'T' => '1',
+                                        'O' => '0',
+                                        _ => ' ',
+                                    }
+                                })
+                                .collect();
+            if ox_seq == "1111".to_string() || ox_seq == "0000".to_string() {
                 return true;
             }
         }
@@ -124,7 +164,48 @@ impl Board {
             let r = row - i;
             let c = col - i;
             if 0 <= r && r < self.height-3 && 0 <= c && c < self.width-3 {
-                if self.board[r as usize][c as usize] == ox && self.board[(r+1) as usize][(c+1) as usize] == ox && self.board[(r+2) as usize][(c+2) as usize] == ox && self.board[(r+3) as usize][(c+3) as usize] == ox {
+                //if self.board[r as usize][c as usize] == ox && self.board[(r+1) as usize][(c+1) as usize] == ox && self.board[(r+2) as usize][(c+2) as usize] == ox && self.board[(r+3) as usize][(c+3) as usize] == ox {
+                    //return true;
+                //}
+                let ox_seq: String = (self.board[r as usize][c as usize].clone()
+                                    + &self.board[(r+1) as usize][(c+1) as usize].clone()
+                                    + &self.board[(r+2) as usize][(c+2) as usize].clone()
+                                    + &self.board[(r+3) as usize][(c+3) as usize].clone())
+                                    .chars()
+                                    .map(|char| {
+                                        match char {
+                                            'X' => '1',
+                                            'T' => '1',
+                                            'O' => '0',
+                                            _ => ' ',
+                                        }
+                                    })
+                                    .collect();
+                if ox_seq == "1111".to_string() || ox_seq == "0000".to_string() {
+                    return true;
+                }
+            }
+        }
+        // Check to see if there is a win on the upper left diagonal
+        for i in 0..4 {
+            let r = row - i;
+            let c = col + i;
+            if 0 <= r && r < self.height-3 && 3 <= c && c < self.width {
+                let ox_seq: String = (self.board[r as usize][c as usize].clone()
+                                    + &self.board[(r+1) as usize][(c-1) as usize].clone()
+                                    + &self.board[(r+2) as usize][(c-2) as usize].clone()
+                                    + &self.board[(r+3) as usize][(c-3) as usize].clone())
+                                    .chars()
+                                    .map(|char| {
+                                        match char {
+                                            'X' => '1',
+                                            'T' => '1',
+                                            'O' => '0',
+                                            _ => ' ',
+                                        }
+                                    })
+                                    .collect();
+                if ox_seq == "1111".to_string() || ox_seq == "0000".to_string() {
                     return true;
                 }
             }
