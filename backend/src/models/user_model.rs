@@ -9,7 +9,7 @@ pub struct User {
     pub name: String,
     pub pwd: String,
     pub score: i64,
-    pub last_grids: Vec<String>, // board id
+    // pub last_grids: Vec<String>, // board id
 }
 
 impl User {
@@ -19,7 +19,7 @@ impl User {
             name: "".to_owned(),
             pwd: "".to_owned(),
             score: 0,
-            last_grids: vec![],
+            // last_grids: vec![],
         }
     }
 
@@ -32,7 +32,7 @@ impl User {
                 &argon2::Config::default()
             ).unwrap(),
             score: 0,
-            last_grids: vec![]
+            // last_grids: vec![]
         }
     }
 }
