@@ -129,7 +129,7 @@ fn user_login() -> Html {
 
     html! {
         <div>
-            <h1>{ "Enter name & pwd aa:" }</h1>
+            <h5>{ "Enter name & pwd aa:" }</h5>
             <input id="login-name" placeholder="Name" /><br />
             <input id="login-pwd" placeholder="Password" /><br />
             <button class="dif" onclick={login_onclick}>{ "Login" }</button><br />
@@ -141,16 +141,81 @@ fn user_login() -> Html {
 #[function_component(UserRegister)]
 
 fn user_register() -> Html {
-    let login_onclick = Callback::from(move |_event: MouseEvent| {});
+    let register_onclick = Callback::from(move |_event: MouseEvent| {
+        let name_input = document()
+            .get_element_by_id("register-name")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let pwd_input = document()
+            .get_element_by_id("register-pwd")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        if name_input.contains("_") {
+            log!("Error");
+            let _ = document()
+                .get_element_by_id("register-msg")
+                .unwrap()
+                .dyn_into::<HtmlHeadingElement>()
+                .unwrap()
+                .set_inner_html("Register failed! Do not include \"_\" in your username.");
+        } else {
+            let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
+            let get_user_uri =
+                format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
+
+            // wasm_bindgen_futures::spawn_local(async move {
+            //     let client = reqwest_wasm::Client::new();
+            //     let response = client
+            //         .post(verify_user_uri)
+            //         .json(&json!({
+            //             "name": name_input,
+            //             "location": "",
+            //             "title": "",
+            //             "pwd": pwd_input
+            //         }))
+            //         .send()
+            //         .await
+            //         .unwrap()
+            //         .json::<serde_json::Value>()
+            //         .await
+            //         .unwrap();
+            //     if !response["status"]["success"].as_bool().unwrap() {
+            //         document()
+            //             .get_element_by_id("login-err-msg")
+            //             .unwrap()
+            //             .dyn_into::<HtmlHeadingElement>()
+            //             .unwrap()
+            //             .set_inner_html("Register failed! {append error message}.");
+            //         //.set_node_value(Some("Login failed! Check your user name & password."));
+            //     } else {
+            //         let user = reqwest_wasm::get(get_user_uri)
+            //             .await
+            //             .unwrap()
+            //             .json::<serde_json::Value>()
+            //             .await
+            //             .unwrap();
+            //         log!(user["title"].to_string());
+            //     }
+            // });
+        }
+    });
 
     html! {
         <div class="sidenavpadding">
             <div>
-                <h5>{ "Enter name & pwd aa:" }</h5>
-                <input id="login-name" placeholder="Name" /><br />
-                <input id="login-pwd" placeholder="Password" /><br />
-                <button class="dif" onclick={login_onclick}>{ "Login" }</button><br />
-                <h1 id="login-err-msg">{ "" }</h1>
+                <h5 style="padding-top: 72px">{ "Enter name and password:" }</h5>
+                <div class="flex-container">
+                    <input id="register-name" placeholder="Name" style="margin-left: 0px"/>
+                    <input id="register-pwd" placeholder="Password"/>
+                    <button class="button" onclick={register_onclick}>{ "Register" }</button><br />
+                </div>
+                <h5 id="register-msg" style="color: red; font-weight: normal">{ "" }</h5>
             </div>
         </div>
     }
@@ -187,35 +252,60 @@ fn user_play_computer() -> Html {
             .unwrap()
             .value();
 
-        let originalboard = document()
-            .get_element_by_id("board")
+        let height = document()
+            .get_element_by_id("board-height")
             .unwrap()
-            .dyn_into::<HtmlDivElement>()
+            .dyn_into::<HtmlInputElement>()
             .unwrap()
-            .inner_html();
+            .value();
 
-        log!(originalboard);
+        let singleCell = "<img src= \"https:\\/\\/i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png\" alt=\"Cell\" />";
+        let mut finalRow = String::from("");
+        for i in 0..width.parse().unwrap() {
+            finalRow += singleCell;
+        }
 
-        let original = document()
-            .get_element_by_id("test")
-            .unwrap()
-            .dyn_into::<HtmlDivElement>()
-            .unwrap()
-            .inner_html();
+        finalRow = "<div class=\"flex-container\">".to_owned() + finalRow.as_str() + "</div>";
+        let mut finalString = String::from("");
+
+        for j in 0..height.parse().unwrap() {
+            finalString += finalRow.as_str();
+        }
 
         let _ = document()
             .get_element_by_id("test")
             .unwrap()
             .dyn_into::<HtmlDivElement>()
             .unwrap()
-
-            .set_inner_html((original + "<div class=\"flex-container\"><img src= \"https:\\/\\/i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png\" alt=\"Cell\"  onclick={imagetest}/></div>").as_str());
+            .set_inner_html((&finalString).as_str());
     });
 
     let imagetest = Callback::from(move |_event: MouseEvent| {
         log! {"Success!"};
     });
 
+    let showDimensionPrompt = Callback::from(move |_event: MouseEvent| {
+        let username = document()
+            .get_element_by_id("player-name")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let userpassword = document()
+            .get_element_by_id("player-password")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let _ = document()
+            .get_element_by_id("dimension-prompt")
+            .unwrap()
+            .dyn_into::<HtmlDivElement>()
+            .unwrap()
+            .set_attribute("style", "display: ");
+    });
     //<div class=\"flex-container\"><img src= \"https:\\/\\/i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png\" alt=\"Cell\"/></div>
     html! {
         <div class="sidenavpadding">
@@ -224,25 +314,28 @@ fn user_play_computer() -> Html {
                 <div class="flex-container">
                     <input id="player-name" placeholder="Your name" style="margin-left: 0px"/>
                     <input id="player-password" placeholder="Password" style="margin-left: 0px"/>
-                    <button class="button">{ "Start game" }</button>
+                    <button class="button" onclick={showDimensionPrompt}>{ "Start game" }</button>
                 </div>
 
-                <h5>{"Enter board dimensions"}</h5>
-                <div class="flex-container">
-                    <input id="board-width" placeholder="Width" style="margin-left: 0px"/>
-                    <input id="board-height" placeholder="Height" style="margin-left: 0px"/>
-                    <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+
+                <div id="dimension-prompt" style="display: none">
+                    <h5>{"Enter board dimensions"}</h5>
+                    <div class="flex-container">
+                        <input id="board-width" placeholder="Width" style="margin-left: 0px"/>
+                        <input id="board-height" placeholder="Height"/>
+                        <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                    </div>
                 </div>
             </div><br />
 
             <div id="test">
 
             </div>
-            <div id = "board">
-                <div class="flex-container">
-                    <img src= "https://i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png" alt="Cell" onclick={imagetest}/>
-                </div>
-            </div>
+            // <div id = "board">
+            //     <div class="flex-container">
+            //         <img src= "https://i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png" alt="Cell" onclick={imagetest}/>
+            //     </div>
+            // </div>
         </div>
     }
 }
