@@ -36,6 +36,47 @@ pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Jso
 
 #[get("/board/info/<path1>/<path2>/<path3>/<path4>/<path5>/<path6>")]
 pub fn get_board(db: &State<BoardRepo>, path1: String, path2: String, path3: String, path4: String, path5: String, path6: String) -> Result<Json<GeneralBoardResponse>, Status> {
+    if path1.is_empty() {
+        return Ok(Json(GeneralBoardResponse {
+            status: GeneralStatus::failure("Player 1 cannot be empty."),
+            board: Board::empty(),
+        }));
+    };
+
+    if path2.is_empty() {
+        return Ok(Json(GeneralBoardResponse {
+            status: GeneralStatus::failure("Player 2 cannot be empty."),
+            board: Board::empty(),
+        }));
+    };
+
+    if path3.is_empty() {
+        return Ok(Json(GeneralBoardResponse {
+            status: GeneralStatus::failure("Mode cannot be empty."),
+            board: Board::empty(),
+        }));
+    };
+
+    if path4.is_empty() {
+        return Ok(Json(GeneralBoardResponse {
+            status: GeneralStatus::failure("Difficulty cannot be empty."),
+            board: Board::empty(),
+        }));
+    };
+
+    if path5.is_empty() {
+        return Ok(Json(GeneralBoardResponse {
+            status: GeneralStatus::failure("Width cannot be empty."),
+            board: Board::empty(),
+        }));
+    };
+
+    if path6.is_empty() {
+        return Ok(Json(GeneralBoardResponse {
+            status: GeneralStatus::failure("Height cannot be empty."),
+            board: Board::empty(),
+        }));
+    };
 
     let p1: String = path1;
     let p2: String = path2;
@@ -43,13 +84,6 @@ pub fn get_board(db: &State<BoardRepo>, path1: String, path2: String, path3: Str
     let difficulty: i64 = path4.trim().parse().unwrap();
     let width: i64 = path5.trim().parse().unwrap();
     let height: i64 = path6.trim().parse().unwrap();
-
-    if p1.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Player 1 cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
 
     match db.get_board(&p1, &p2, &mode, &difficulty, &width, &height) {
 
