@@ -1,9 +1,14 @@
 mod api;
 mod models;
 mod repository;
+mod command_line_interface;
 
 #[macro_use]
 extern crate rocket;
+
+use std::env;
+use std::io;
+use std::io::Write;
 
 use api::user_api::*;
 use api::board_api::*;
@@ -21,6 +26,8 @@ use rocket::fairing::{
     Info,
     Kind
 };
+
+use command_line_interface::{welcome};
 
 pub struct Cors;
 
@@ -56,6 +63,59 @@ fn rocket() -> _ {
     //     allow_credentials: true,
     //     ..Default::default()
     // }.to_cors().unwrap();
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 1 {
+        let cmd: &String = &args[1];
+        if cmd == "debug" {
+            welcome();
+
+            // Initialize the variables that are needed //
+            let mut player_1: String = String::new();
+            let mut player_2: String = String::new();
+            let mut mode: String = String::new();
+            let mut difficulty: i64 = i64::from(1);
+            let mut width: i64 = i64::from(1);
+            let mut height: i64 = i64::from(1);
+
+            // Get who is player 1 //
+            println!("Enter player 1 (Press ENTER as computer): ");
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut player_1).unwrap();
+
+            // Get who is player 2 //
+            println!("Enter player 2 (Press ENTER as computer): ");
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut player_2).unwrap();
+
+            // Get the game mode //
+            println!("Enter the game mode: ");
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut mode).unwrap();
+
+            // Get the difficulty //
+            println!("Enter the difficulty level: ");
+            let mut input: String = String::new();
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            difficulty = input.trim().parse().unwrap();
+
+            // Get the width of the board //
+            println!("Enter the width of the board: ");
+            let mut input: String = String::new();
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            width = input.trim().parse().unwrap();
+
+            // Get the height of the board //
+            println!("Enter the height of the board: ");
+            let mut input: String = String::new();
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            height = input.trim().parse().unwrap();
+        } else {
+            println!("Environment variable not recognized. Launching backend instead.")
+        }
+    }
 
     let db = UserRepo::init();
     let db_board = BoardRepo::init();
