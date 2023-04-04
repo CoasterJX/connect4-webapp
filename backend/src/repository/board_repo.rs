@@ -34,7 +34,7 @@ impl BoardRepo {
     // add a board into mongodb
     pub fn create_board(&self, new_board: Board) -> bool {
 
-        match self.get_board(&new_board.player_1, &new_board.player_2) {
+        match self.get_board(&new_board.player_1, &new_board.player_2, &new_board.mode, &new_board.difficulty, &new_board.width, &new_board.height) {
             Some(_) => return false,
             None => (),
         }
@@ -50,11 +50,15 @@ impl BoardRepo {
     }
 
     // get a board from mongodb
-    pub fn get_board(&self, player_1: &String, player_2: &String) -> Option<Board> {
+    pub fn get_board(&self, player_1: &String, player_2: &String, mode: &String, difficulty: &i64, width: &i64, height: &i64) -> Option<Board> {
 
         let filter = doc! {
             "player_1": player_1.replace("_", " "),
-            "player_2": player_2.replace("_", " ")
+            "player_2": player_2.replace("_", " "),
+            "mode": mode,
+            "difficulty": difficulty,
+            "width": width,
+            "height": height,
         };
         let board_detail = self.col
             .find_one(filter, None)

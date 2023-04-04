@@ -34,11 +34,16 @@ pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Jso
     }
 }
 
-#[get("/board/info/<path1>/<path2>")]
-pub fn get_board(db: &State<BoardRepo>, path1: String, path2: String) -> Result<Json<GeneralBoardResponse>, Status> {
+#[get("/board/info/<path1>/<path2>/<path3>/<path4>/<path5>/<path6>")]
+pub fn get_board(db: &State<BoardRepo>, path1: String, path2: String, path3: String, path4: String, path5: String, path6: String) -> Result<Json<GeneralBoardResponse>, Status> {
 
-    let p1 = path1;
-    let p2 = path2;
+    let p1: String = path1;
+    let p2: String = path2;
+    let mode: String = path3;
+    let difficulty: i64 = path4.trim().parse().unwrap();
+    let width: i64 = path5.trim().parse().unwrap();
+    let height: i64 = path6.trim().parse().unwrap();
+
     if p1.is_empty() {
         return Ok(Json(GeneralBoardResponse {
             status: GeneralStatus::failure("Player 1 cannot be empty."),
@@ -46,7 +51,7 @@ pub fn get_board(db: &State<BoardRepo>, path1: String, path2: String) -> Result<
         }));
     };
 
-    match db.get_board(&p1, &p2) {
+    match db.get_board(&p1, &p2, &mode, &difficulty, &width, &height) {
 
         Some(board) => Ok(Json(GeneralBoardResponse {
             status: GeneralStatus::success(),
