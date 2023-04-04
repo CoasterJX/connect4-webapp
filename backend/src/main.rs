@@ -12,6 +12,7 @@ use std::io::Write;
 
 use api::user_api::*;
 use api::board_api::*;
+use models::board_model::Board;
 use repository::user_repo::UserRepo;
 use repository::board_repo::BoardRepo;
 use rocket::{
@@ -112,6 +113,12 @@ fn rocket() -> _ {
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut input).unwrap();
             height = input.trim().parse().unwrap();
+
+            let db: BoardRepo = BoardRepo::init();
+            let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
+                Some(board) => board,
+                None => Board::empty(),
+            };
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }
