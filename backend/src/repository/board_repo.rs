@@ -34,10 +34,10 @@ impl BoardRepo {
     // add a board into mongodb
     pub fn create_board(&self, new_board: Board) -> bool {
 
-        match self.get_board(&new_board.player_1, &new_board.player_2, &new_board.mode, &new_board.difficulty, &new_board.width, &new_board.height) {
+        match self.get_board(&new_board) {
             Some(_) => return false,
             None => (),
-        }
+        };
 
         let board = self.col
             .insert_one(new_board, None)
@@ -49,16 +49,39 @@ impl BoardRepo {
         }
     }
 
-    // get a board from mongodb
-    pub fn get_board(&self, player_1: &String, player_2: &String, mode: &String, difficulty: &i64, width: &i64, height: &i64) -> Option<Board> {
+    // delete a board from mongodb
+    pub fn delete_board(&self, board_info: &Board) -> bool {
 
         let filter = doc! {
-            "player_1": player_1.replace("_", " "),
-            "player_2": player_2.replace("_", " "),
-            "mode": mode,
-            "difficulty": difficulty,
-            "width": width,
-            "height": height,
+            "player_1": board_info.player_1.replace("_", " "),
+            "player_2": board_info.player_2.replace("_", " "),
+            "mode": board_info.mode.clone(),
+            "difficulty": board_info.difficulty.clone(),
+            "width": board_info.width.clone(),
+            "height": board_info.height.clone(),
+        };
+
+        match self.col.delete_one(filter, None).ok() {
+            Some(_) => true,
+            None => false,
+        }
+    }
+    
+    // update a board from mongodb
+    pub fn update_board(&self, board_info: &Board) -> bool {
+        self.delete_board(board_info) && self.create_board(board_info.clone())
+    }
+
+    // get a board from mongodb
+    pub fn get_board(&self, board_info: &Board) -> Option<Board> {
+
+        let filter = doc! {
+            "player_1": board_info.player_1.replace("_", " "),
+            "player_2": board_info.player_2.replace("_", " "),
+            "mode": board_info.mode.clone(),
+            "difficulty": board_info.difficulty.clone(),
+            "width": board_info.width.clone(),
+            "height": board_info.height.clone(),
         };
         let board_detail = self.col
             .find_one(filter, None)
