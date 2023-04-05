@@ -264,9 +264,9 @@ fn user_guide() -> Html {
 #[function_component(UserPlayComputer)]
 fn user_play_computer() -> Html {
     let navigator = use_navigator().unwrap();
-    // let mut userName = "";
-    // let mut boardWidth = -1;
-    // let mut boardHeight = -1;
+    let mut userName = Arc::new(Mutex::new(""));
+    let mut boardWidth = -1;
+    let mut boardHeight = -1;
 
     let login_onclick = Callback::from(move |_event: MouseEvent| {
         let name_input = document()
@@ -339,7 +339,29 @@ fn user_play_computer() -> Html {
                         .dyn_into::<HtmlDivElement>()
                         .unwrap()
                         .set_attribute("style", "display: ");
-                    // userName = &name_input;
+
+                    let _ = document()
+                        .get_element_by_id("difficulty-prompt")
+                        .unwrap()
+                        .dyn_into::<HtmlDivElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: ");
+
+                    let _ = document()
+                        .get_element_by_id("player-name")
+                        .unwrap()
+                        .dyn_into::<HtmlInputElement>()
+                        .unwrap()
+                        .set_attribute("readonly", "true");
+
+                    let _ = document()
+                        .get_element_by_id("player-pwd")
+                        .unwrap()
+                        .dyn_into::<HtmlInputElement>()
+                        .unwrap()
+                        .set_attribute("readonly", "true");
+                    // let userNamePtr = userName.clone();
+                    // *userNamePtr.lock().unwrap() = name_input.as_str();
                 }
             });
         }
@@ -359,16 +381,6 @@ fn user_play_computer() -> Html {
             .dyn_into::<HtmlInputElement>()
             .unwrap()
             .value();
-
-        // let singleCell =
-        //     "<img src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
-        // let mut finalRow = String::from("");
-        // for i in 0..width.parse().unwrap() {
-        //     finalRow += singleCell;
-        // }
-
-        // finalRow = "<div class=\"flex-container\">".to_owned() + finalRow.as_str() + "</div>";
-        // let mut finalString = String::from("");
 
         let imgprefix = "<img ";
         let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
@@ -396,13 +408,6 @@ fn user_play_computer() -> Html {
             .unwrap()
             .set_inner_html((&finalString).as_str());
 
-        let _ = document()
-            .get_element_by_id("dimension-prompt")
-            .unwrap()
-            .dyn_into::<HtmlDivElement>()
-            .unwrap()
-            .set_attribute("style", "display: none");
-
         log!("Here5");
         let _ = document()
             .get_element_by_id("column-prompt")
@@ -411,22 +416,34 @@ fn user_play_computer() -> Html {
             .unwrap()
             .set_attribute("style", "display: ");
 
-        let create_board_uri = format!("{}/user/verify", BACKEND_URI);
+        let create_board_uri = format!("{}/board/create", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
                 .post(create_board_uri)
                 .json(&json!({
-                "width": width,
-                "height": height,
+                "width": width.parse::<i64>().unwrap(),
+                "height": height.parse::<i64>().unwrap(),
                 "board": [],
                 "last_row": 0,
                 "last_col": 0,
                 "last_player": "",
-                "player_1": "Jianxi Wang",
+                "player_1": document()
+                            .get_element_by_id("player-name")
+                            .unwrap()
+                            .dyn_into::<HtmlInputElement>()
+                            .unwrap()
+                            .value(),
                 "player_2": "*",
                 "mode": [false, false, false, false],
-                "difficulty": 9
+                "difficulty": document()
+                            .get_element_by_id("board-difficulty")
+                            .unwrap()
+                            .dyn_into::<HtmlInputElement>()
+                            .unwrap()
+                            .value()
+                            .parse::<i64>()
+                            .unwrap(),
                         }))
                 .send()
                 .await
@@ -437,34 +454,143 @@ fn user_play_computer() -> Html {
 
             log!("Here2");
 
-            if !response["exists"].as_bool().unwrap() {
+            if !response["status"]["success"].as_bool().unwrap() {
                 // let errormessage = response["status"]["msg"]
                 //     .to_string()
                 //     .replace("\\", "")
                 //     .replace("\"", "");
 
-                log!("Here4");
-                document()
-                    .get_element_by_id("login-msg")
-                    .unwrap()
-                    .dyn_into::<HtmlHeadingElement>()
-                    .unwrap()
-                    .set_inner_html("Login failed! User password combination does not exist!");
+                log!("Board generation failed");
+                // document()
+                //     .get_element_by_id("login-msg")
+                //     .unwrap()
+                //     .dyn_into::<HtmlHeadingElement>()
+                //     .unwrap()
+                //     .set_inner_html("Login failed! User password combination does not exist!");
                 //.set_node_value(Some("Login failed! Check your user name & password."));
             } else {
-                log!("Here3");
+                log!("Board generation succeded");
+
                 let _ = document()
-                    .get_element_by_id("dimension-prompt")
+                    .get_element_by_id("board-difficulty")
                     .unwrap()
-                    .dyn_into::<HtmlDivElement>()
+                    .dyn_into::<HtmlInputElement>()
                     .unwrap()
-                    .set_attribute("style", "display: ");
+                    .set_attribute("readonly", "true");
+                let _ = document()
+                    .get_element_by_id("board-width")
+                    .unwrap()
+                    .dyn_into::<HtmlInputElement>()
+                    .unwrap()
+                    .set_attribute("readonly", "true");
+                let _ = document()
+                    .get_element_by_id("board-height")
+                    .unwrap()
+                    .dyn_into::<HtmlInputElement>()
+                    .unwrap()
+                    .set_attribute("readonly", "true");
             }
         });
     });
 
     let makeMove = Callback::from(move |_event: MouseEvent| {
+        let column = document()
+            .get_element_by_id("column-number")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value()
+            .parse::<i64>()
+            .unwrap()
+            - 1;
         // Make the move
+        let create_board_uri = format!("{}/board/create", BACKEND_URI);
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            let response = client
+                .post(create_board_uri)
+                .json(&json!({
+                    "board_info": {
+                        "width": document()
+                                .get_element_by_id("board-width")
+                                .unwrap()
+                                .dyn_into::<HtmlInputElement>()
+                                .unwrap()
+                                .value()
+                                .parse::<i64>()
+                                .unwrap(),
+                        "height": document()
+                                .get_element_by_id("board-height")
+                                .unwrap()
+                                .dyn_into::<HtmlInputElement>()
+                                .unwrap()
+                                .value()
+                                .parse::<i64>()
+                                .unwrap(),
+                        "board": [],
+                        "last_row": 0,
+                        "last_col": 0,
+                        "last_player": "",
+                        "player_1": document()
+                                    .get_element_by_id("player-name")
+                                    .unwrap()
+                                    .dyn_into::<HtmlInputElement>()
+                                    .unwrap()
+                                    .value(),
+                        "player_2": "*",
+                        "mode": [false, false, false, false],
+                        "difficulty": document()
+                                    .get_element_by_id("board-difficulty")
+                                    .unwrap()
+                                    .dyn_into::<HtmlInputElement>()
+                                    .unwrap()
+                                    .value()
+                                    .parse::<i64>()
+                                    .unwrap()
+                    },
+                    "col": 2}))
+                .send()
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap();
+
+            log!("Here2");
+
+            if !response["status"]["success"].as_bool().unwrap() {
+                // let errormessage = response["status"]["msg"]
+                //     .to_string()
+                //     .replace("\\", "")
+                //     .replace("\"", "");
+
+                log!("Make move failed");
+                // document()
+                //     .get_element_by_id("login-msg")
+                //     .unwrap()
+                //     .dyn_into::<HtmlHeadingElement>()
+                //     .unwrap()
+                //     .set_inner_html("Login failed! User password combination does not exist!");
+                //.set_node_value(Some("Login failed! Check your user name & password."));
+            } else {
+                log!("Board generation succeded");
+                // let next_row = response["next_row"];
+                // let next_column = response["next_col"];
+                // let _ = document()
+                //     .get_element_by_id(format!("{}-{}", next_row, next_column))
+                //     .unwrap()
+                //     .dyn_into::<HtmlDivElement>()
+                //     .unwrap()
+                //     .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+
+                // let _ = document()
+                //     .get_element_by_id("difficulty-prompt")
+                //     .unwrap()
+                //     .dyn_into::<HtmlDivElement>()
+                //     .unwrap()
+                //     .set_attribute("style", "display: ");
+            }
+        });
     });
 
     let testing = Callback::from(move |_event: MouseEvent| {
@@ -479,10 +605,11 @@ fn user_play_computer() -> Html {
     html! {
         <div class="sidenavpadding">
             <div>
+
                 <h5 style="padding-top: 72px">{"Enter your name"}</h5>
                 <div class="flex-container">
-                    <input id="player-name" placeholder="Your name" style="margin-left: 0px"/>
-                    <input id="player-pwd" placeholder="Password" style="margin-left: 0px"/>
+                    <input id="player-name" placeholder="Your name" style="margin-left: 0px" readonly=false/>
+                    <input id="player-pwd" placeholder="Password" style="margin-left: 0px" readonly=false/>
                     <button class="button" onclick={login_onclick}>{ "Start game" }</button>
                 </div>
 
@@ -491,15 +618,22 @@ fn user_play_computer() -> Html {
                 <div id="dimension-prompt" style="display: none">
                     <h5>{"Enter board dimensions"}</h5>
                     <div class="flex-container">
-                        <input id="board-width" placeholder="Width" style="margin-left: 0px"/>
-                        <input id="board-height" placeholder="Height"/>
+                        <input id="board-width" placeholder="Width" style="margin-left: 0px" readonly=false/>
+                        <input id="board-height" placeholder="Height" readonly=false/>
+                    </div>
+                </div>
+
+                <div id="difficulty-prompt" style="display: none">
+                    <h5>{"Enter difficulty"}</h5>
+                    <div class="flex-container">
+                        <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" readonly=false/>
                         <button class="button" onclick={generateBoard}>{ "Generate" }</button>
                     </div>
                 </div>
 
                 <div id="column-prompt" style="display: none">
                     <div class="flex-container" >
-                        <input id="column-number" placeholder="Column number" style="margin-left: 0px"/>
+                        <input id="column-number" placeholder="Column number" style="margin-left: 0px" readonly=false/>
                         <button class="button" onclick={makeMove}>{ "Confirm" }</button>
                     </div>
                 </div>

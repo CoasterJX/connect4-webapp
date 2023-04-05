@@ -1,7 +1,7 @@
 mod api;
+mod command_line_interface;
 mod models;
 mod repository;
-mod command_line_interface;
 
 #[macro_use]
 extern crate rocket;
@@ -10,25 +10,16 @@ use std::env;
 use std::io;
 use std::io::Write;
 
-use api::user_api::*;
 use api::board_api::*;
+use api::user_api::*;
 use models::board_model::Board;
-use repository::user_repo::UserRepo;
 use repository::board_repo::BoardRepo;
-use rocket::{
-    http::Header,
-    routes,
-    Request,
-    Response
-};
+use repository::user_repo::UserRepo;
+use rocket::{http::Header, routes, Request, Response};
 
-use rocket::fairing::{
-    Fairing,
-    Info,
-    Kind
-};
+use rocket::fairing::{Fairing, Info, Kind};
 
-use command_line_interface::{welcome};
+use command_line_interface::welcome;
 
 pub struct Cors;
 
@@ -49,14 +40,11 @@ impl Fairing for Cors {
         ));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
-
     }
 }
 
-
 #[launch]
 fn rocket() -> _ {
-
     // let allowed_origins = AllowedOrigins::all();
     // let cors = CorsOptions {
     //     allowed_origins,
@@ -115,10 +103,10 @@ fn rocket() -> _ {
             height = input.trim().parse().unwrap();
 
             let db: BoardRepo = BoardRepo::init();
-            let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
-                Some(board) => board,
-                None => Board::empty(),
-            };
+            // let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
+            //     Some(board) => board,
+            //     None => Board::empty(),
+            // };
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }
