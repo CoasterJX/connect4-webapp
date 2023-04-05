@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::{
     models::{
         board_model::*,
@@ -15,6 +13,9 @@ use rocket::{
 };
 
 extern crate argon2;
+
+const COMPUTER_STR: &str = "*";
+const DRAW_STR: &str = "^";
 
 #[post("/board/create", data = "<new_board>")]
 pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Json<GeneralBoardResponse>, Status> {
@@ -34,58 +35,104 @@ pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Jso
     }
 }
 
-#[get("/board/info/<path1>/<path2>/<path3>/<path4>/<path5>/<path6>")]
-pub fn get_board(db: &State<BoardRepo>, path1: String, path2: String, path3: String, path4: String, path5: String, path6: String) -> Result<Json<GeneralBoardResponse>, Status> {
-    if path1.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Player 1 cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
+#[post("/board/move", data = "<move_req>")]
+pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -> Result<Json<PerformMoveResponse>, Status> {
 
-    if path2.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Player 2 cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
+    let (board, col) = (
+        move_req.board_info.clone(),
+        move_req.col.clone()
+    );
 
-    if path3.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Mode cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
+    match db.get_board(&board) {
+        
+        Some(mut b) => {
+            if b.allows_move(&col) {
+                let next_player = b.get_next_player();
+                b.perform_move(col.clone(), next_player.clone());
+            }
 
-    if path4.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Difficulty cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
+            // case when human wins or draw
+            if b.is_terminal() {
+                match b.is_draw() {
+                    true => return Ok(Json(PerformMoveResponse {
+                        status: GeneralStatus::success(),
+                        next_row: -1,
+                        next_col: -1,
+                        winner: DRAW_STR.to_owned(),
+                    })),
+                    false => return Ok(Json(PerformMoveResponse {
+                        status: GeneralStatus::success(),
+                        next_row: -1,
+                        next_col: -1,
+                        winner: b.last_player.clone(),
+                    })),
+                }
+            }
 
-    if path5.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Width cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
+            // case when the opposite is computer
+            if b.get_next_player() == COMPUTER_STR {
+                let (_, best_move) = b.alpha_beta(
+                    b.get_next_player(),
+                    i64::MIN,
+                    i64::MAX,
+                    b.difficulty
+                );
 
-    if path6.is_empty() {
-        return Ok(Json(GeneralBoardResponse {
-            status: GeneralStatus::failure("Height cannot be empty."),
-            board: Board::empty(),
-        }));
-    };
+                let next_player = b.get_next_player();
+                b.perform_move(best_move.clone(), next_player.clone());
+            } else {
+                b.last_row = -1;
+                b.last_col = -1;
+            }
 
-    let p1: String = path1;
-    let p2: String = path2;
-    let mode: String = path3;
-    let difficulty: i64 = path4.trim().parse().unwrap();
-    let width: i64 = path5.trim().parse().unwrap();
-    let height: i64 = path6.trim().parse().unwrap();
+            // case when computer wins or draw
+            if b.is_terminal() {
+                match b.is_draw() {
+                    true => return Ok(Json(PerformMoveResponse {
+                        status: GeneralStatus::success(),
+                        next_row: b.last_row.clone(),
+                        next_col: b.last_col.clone(),
+                        winner: DRAW_STR.to_owned(),
+                    })),
+                    false => return Ok(Json(PerformMoveResponse {
+                        status: GeneralStatus::success(),
+                        next_row: b.last_row.clone(),
+                        next_col: b.last_col.clone(),
+                        winner: b.last_player.clone(),
+                    })),
+                }
+            }
 
-    match db.get_board(&p1, &p2, &mode, &difficulty, &width, &height) {
+            // update the board into mongodb & send the computer move if there is one
+            match db.update_board(&b) {
+                true => Ok(Json(PerformMoveResponse {
+                    status: GeneralStatus::success(),
+                    next_row: b.last_row.clone(),
+                    next_col: b.last_col.clone(),
+                    winner: "".to_owned(),
+                })),
+                false => Ok(Json(PerformMoveResponse {
+                    status: GeneralStatus::failure("Database not connected."),
+                    next_row: b.last_row.clone(),
+                    next_col: b.last_col.clone(),
+                    winner: "".to_owned(),
+                })),
+            }
+        },
+
+        None => Ok(Json(PerformMoveResponse {
+            status: GeneralStatus::failure("Board does not exist or database not connected."),
+            next_row: -1,
+            next_col: -1,
+            winner: "".to_owned(),
+        }))
+    }
+}
+
+#[post("/board/info", data = "<board>")]
+pub fn get_board(db: &State<BoardRepo>, board: Json<Board>) -> Result<Json<GeneralBoardResponse>, Status> {
+
+    match db.get_board(&board) {
 
         Some(board) => Ok(Json(GeneralBoardResponse {
             status: GeneralStatus::success(),

@@ -138,4 +138,5 @@ fn rocket() -> _ {
         .mount("/", routes![create_board])
         .mount("/", routes![get_board])
         .mount("/", routes![get_all_boards])
+        .mount("/", routes![perform_move])
 }
