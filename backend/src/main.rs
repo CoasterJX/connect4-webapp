@@ -115,10 +115,10 @@ fn rocket() -> _ {
             height = input.trim().parse().unwrap();
 
             let db: BoardRepo = BoardRepo::init();
-            let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
-                Some(board) => board,
-                None => Board::empty(),
-            };
+            // let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
+            //     Some(board) => board,
+            //     None => Board::empty(),
+            // };
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }
