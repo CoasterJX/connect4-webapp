@@ -264,6 +264,9 @@ fn user_guide() -> Html {
 #[function_component(UserPlayComputer)]
 fn user_play_computer() -> Html {
     let navigator = use_navigator().unwrap();
+    // let mut userName = "";
+    // let mut boardWidth = -1;
+    // let mut boardHeight = -1;
 
     let login_onclick = Callback::from(move |_event: MouseEvent| {
         let name_input = document()
@@ -336,6 +339,7 @@ fn user_play_computer() -> Html {
                         .dyn_into::<HtmlDivElement>()
                         .unwrap()
                         .set_attribute("style", "display: ");
+                    // userName = &name_input;
                 }
             });
         }
@@ -356,18 +360,33 @@ fn user_play_computer() -> Html {
             .unwrap()
             .value();
 
-        let singleCell =
-            "<img src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
-        let mut finalRow = String::from("");
-        for i in 0..width.parse().unwrap() {
-            finalRow += singleCell;
-        }
+        // let singleCell =
+        //     "<img src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
+        // let mut finalRow = String::from("");
+        // for i in 0..width.parse().unwrap() {
+        //     finalRow += singleCell;
+        // }
 
-        finalRow = "<div class=\"flex-container\">".to_owned() + finalRow.as_str() + "</div>";
+        // finalRow = "<div class=\"flex-container\">".to_owned() + finalRow.as_str() + "</div>";
+        // let mut finalString = String::from("");
+
+        let imgprefix = "<img ";
+        let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
+
         let mut finalString = String::from("");
 
         for j in 0..height.parse().unwrap() {
-            finalString += finalRow.as_str();
+            let flexprefix = "<div class=\"flex-container\">";
+            let flexsuffix = "</div>";
+            let mut row = String::from("");
+            let mut bundle = String::from("");
+            for i in 0..width.parse().unwrap() {
+                let id = format!("id = \"{}-{}\"", j, i);
+                row += format!("{}{}{}", imgprefix, id, imgsuffix).as_str();
+            }
+            bundle = format!("{}{}{}", flexprefix, row, flexsuffix);
+            let rowFinal = bundle.as_str();
+            finalString += rowFinal;
         }
 
         let _ = document()
@@ -391,6 +410,57 @@ fn user_play_computer() -> Html {
             .dyn_into::<HtmlDivElement>()
             .unwrap()
             .set_attribute("style", "display: ");
+
+        let create_board_uri = format!("{}/user/verify", BACKEND_URI);
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            let response = client
+                .post(create_board_uri)
+                .json(&json!({
+                "width": width,
+                "height": height,
+                "board": [],
+                "last_row": 0,
+                "last_col": 0,
+                "last_player": "",
+                "player_1": "Jianxi Wang",
+                "player_2": "*",
+                "mode": [false, false, false, false],
+                "difficulty": 9
+                        }))
+                .send()
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap();
+
+            log!("Here2");
+
+            if !response["exists"].as_bool().unwrap() {
+                // let errormessage = response["status"]["msg"]
+                //     .to_string()
+                //     .replace("\\", "")
+                //     .replace("\"", "");
+
+                log!("Here4");
+                document()
+                    .get_element_by_id("login-msg")
+                    .unwrap()
+                    .dyn_into::<HtmlHeadingElement>()
+                    .unwrap()
+                    .set_inner_html("Login failed! User password combination does not exist!");
+                //.set_node_value(Some("Login failed! Check your user name & password."));
+            } else {
+                log!("Here3");
+                let _ = document()
+                    .get_element_by_id("dimension-prompt")
+                    .unwrap()
+                    .dyn_into::<HtmlDivElement>()
+                    .unwrap()
+                    .set_attribute("style", "display: ");
+            }
+        });
     });
 
     let makeMove = Callback::from(move |_event: MouseEvent| {
