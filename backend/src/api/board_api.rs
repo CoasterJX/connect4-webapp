@@ -50,22 +50,22 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                 let next_player = b.get_next_player();
                 b.perform_move(col.clone(), next_player.clone());
             }
+            let human_move = (b.last_row.clone(), b.last_col.clone());
 
             // case when human wins or draw
             if b.is_terminal() {
                 match b.is_draw() {
-                    true => return Ok(Json(PerformMoveResponse {
-                        status: GeneralStatus::success(),
-                        next_row: -1,
-                        next_col: -1,
-                        winner: DRAW_STR.to_owned(),
-                    })),
-                    false => return Ok(Json(PerformMoveResponse {
-                        status: GeneralStatus::success(),
-                        next_row: -1,
-                        next_col: -1,
-                        winner: b.last_player.clone(),
-                    })),
+                    true => return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        (-1, -1),
+                        DRAW_STR.to_owned()))
+                    ),
+                    false => return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        (-1, -1),
+                        b.last_player.clone()))),
                 }
             }
 
@@ -84,48 +84,49 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                 b.last_row = -1;
                 b.last_col = -1;
             }
+            let cmput_move = (b.last_row.clone(), b.last_col.clone());
 
             // case when computer wins or draw
             if b.is_terminal() {
                 match b.is_draw() {
-                    true => return Ok(Json(PerformMoveResponse {
-                        status: GeneralStatus::success(),
-                        next_row: b.last_row.clone(),
-                        next_col: b.last_col.clone(),
-                        winner: DRAW_STR.to_owned(),
-                    })),
-                    false => return Ok(Json(PerformMoveResponse {
-                        status: GeneralStatus::success(),
-                        next_row: b.last_row.clone(),
-                        next_col: b.last_col.clone(),
-                        winner: b.last_player.clone(),
-                    })),
+                    true => return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        cmput_move.clone(),
+                        DRAW_STR.to_owned()))
+                    ),
+                    false => return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        cmput_move.clone(),
+                        b.last_player.clone()))
+                    ),
                 }
             }
 
             // update the board into mongodb & send the computer move if there is one
             match db.update_board(&b) {
-                true => Ok(Json(PerformMoveResponse {
-                    status: GeneralStatus::success(),
-                    next_row: b.last_row.clone(),
-                    next_col: b.last_col.clone(),
-                    winner: "".to_owned(),
-                })),
-                false => Ok(Json(PerformMoveResponse {
-                    status: GeneralStatus::failure("Database not connected."),
-                    next_row: b.last_row.clone(),
-                    next_col: b.last_col.clone(),
-                    winner: "".to_owned(),
-                })),
+                true => return Ok(Json(PerformMoveResponse::new(
+                    (true, ""),
+                    human_move.clone(),
+                    cmput_move.clone(),
+                    "".to_owned()))
+                ),
+                false => return Ok(Json(PerformMoveResponse::new(
+                    (false, "Database not connected."),
+                    human_move.clone(),
+                    cmput_move.clone(),
+                    "".to_owned()))
+                ),
             }
         },
 
-        None => Ok(Json(PerformMoveResponse {
-            status: GeneralStatus::failure("Board does not exist or database not connected."),
-            next_row: -1,
-            next_col: -1,
-            winner: "".to_owned(),
-        }))
+        None => return Ok(Json(PerformMoveResponse::new(
+            (false, "Board does not exist or database not connected."),
+            (-1, -1),
+            (-1, -1),
+            "".to_owned()))
+        ),
     }
 }
 
