@@ -29,7 +29,13 @@ impl Board {
         for row in 0..self.height {
             board_str.push('|');
             for col in 0..self.width {
-                board_str.push_str(&self.board[row as usize][col as usize]);
+                if self.board[row as usize][col as usize] == self.player_1 {
+                    board_str.push_str("T");
+                } else if self.board[row as usize][col as usize] == self.player_2 {
+                    board_str.push_str("O");
+                } else {
+                    board_str.push_str(&self.board[row as usize][col as usize]);
+                }
                 board_str.push_str("|");
             }
             board_str.push_str("\n");
@@ -110,7 +116,7 @@ impl Board {
     - difficulty: computer difficulty level, only useful when computer is involved.
      */
     pub fn new(w: i64, h: i64, p1: String, p2: String, m: Vec<bool>, d: i64) -> Self {
-        let mut board_init = vec![];
+        let mut board_init: Vec<Vec<String>> = vec![];
         for r in 0..h {
             board_init.push(vec![]);
             for _ in 0..w {
@@ -284,7 +290,6 @@ impl Board {
         let mut input: String = String::new();
         loop {
             println!("{}'s choice: ", ox);
-            io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut input).unwrap();
             match input.trim().parse() {
                 Ok(p) => {
@@ -306,8 +311,12 @@ impl Board {
     Prints out who won the game and the final game board.
      */
     pub fn print_congrats(&self) {
-        println!("{} wins -- Congratulations!", self.last_player);
-        self.print();
+        if self.last_player == "" {
+            println!("Computer wins -- Congratulations!");
+        } else {
+            println!("{} wins -- Congratulations!", self.last_player);
+        }
+        println!("{}", self.print());
     }
 
     /*
@@ -318,10 +327,11 @@ impl Board {
         let mut gameOver: bool = false;
         let mut ox: String = self.player_1.clone();
         while !gameOver {
-            self.print();
+            println!("{}", self.print());
             if ox == "" {
                 let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), -2, 2, self.difficulty);
                 self.perform_move(col_move, ox.clone());
+                println!("Computer performed move {}.", col_move);
             } else {
                 let col_move: i64 = self.get_player_move(ox.clone());
                 self.perform_move(col_move, ox.clone());
