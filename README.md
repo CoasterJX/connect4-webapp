@@ -8,7 +8,7 @@ mongod --bind_ip 0.0.0.0 --port=8080 --dbpath=backend/data
 
 backend:
 docker exec -it connect4_test bash
-export MONGOURI=mongodb://172.31.60.145:8080
+export MONGOURI=mongodb://172.31.6.103:8080
 cd backend
 cargo run
 
