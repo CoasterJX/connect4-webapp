@@ -45,6 +45,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
 
     match db.get_board(&board) {
         
+        // there is a matched active board in database
         Some(mut b) => {
             if b.allows_move(&col) {
                 let next_player = b.get_next_player();
@@ -121,6 +122,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             }
         },
 
+        // no matched board found in database
         None => return Ok(Json(PerformMoveResponse::new(
             (false, "Board does not exist or database not connected."),
             (-1, -1),

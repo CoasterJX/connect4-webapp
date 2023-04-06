@@ -13,8 +13,13 @@ use std::io::Write;
 use api::user_api::*;
 use api::board_api::*;
 use models::board_model::Board;
-use repository::user_repo::UserRepo;
-use repository::board_repo::BoardRepo;
+
+use repository::{
+    user_repo::UserRepo,
+    board_repo::BoardRepo,
+    db_type::*
+};
+
 use rocket::{
     http::Header,
     routes,
@@ -114,7 +119,7 @@ fn rocket() -> _ {
             let _ = io::stdin().read_line(&mut input).unwrap();
             height = input.trim().parse().unwrap();
 
-            let db: BoardRepo = BoardRepo::init();
+            let db: BoardRepo = BoardRepo::init(COL_BOARD);
             // let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
             //     Some(board) => board,
             //     None => Board::empty(),
@@ -124,12 +129,14 @@ fn rocket() -> _ {
         }
     }
 
-    let db = UserRepo::init();
-    let db_board = BoardRepo::init();
+    let db_user = UserRepo::init();
+    let db_board_active = BoardRepo::init(COL_BOARD);
+    let db_board_hist = BoardRepo::init(COL_HIST);
     rocket::build()
         .attach(Cors)
-        .manage(db)
-        .manage(db_board)
+        .manage(db_user)
+        .manage(db_board_active)
+        .manage(db_board_hist)
         .mount("/", routes![create_user])
         .mount("/", routes![get_user])
         .mount("/", routes![get_all_users])
