@@ -1,6 +1,7 @@
 use std::{cmp::{max, min}, collections::HashMap};
 
 use serde::{Serialize, Deserialize};
+use rand::seq::SliceRandom;
 
 use super::general_model::GeneralStatus;
 
@@ -393,10 +394,19 @@ impl Board {
         }
         
         let ((mut score, next_player), mut mov) = (init_score.get(&player).unwrap(), -1);
+        let mut zero_tie = vec![];
 
         for m in self.available_moves() {
             self.perform_move(m.clone(), player.clone());
-            let (m_score, _) = self.alpha_beta(next_player.to_string(), alpha, beta, ply-1);
+            let (m_score, _) = self.clone().alpha_beta(next_player.to_string(), alpha, beta, ply-1);
+
+            if ply == self.difficulty {
+                println!("{:?}-{:?}", m, m_score);
+            }
+            
+            if m_score == 0 {
+                zero_tie.append(&mut vec![m.clone()]);
+            }
 
             if player == self.player_1.clone() {
 
@@ -425,6 +435,14 @@ impl Board {
             }
 
             self.undo_move(m.clone());
+        }
+
+        // medium difficulty will do random planning
+        if score == 0 && self.difficulty < 7 && zero_tie.len() as i64 == self.width {
+            match zero_tie.choose(&mut rand::thread_rng()) {
+                Some(m) => mov = m.clone(),
+                None => (),
+            };
         }
 
         return (score.clone(), mov);

@@ -284,6 +284,7 @@ version = "0.1.0"
 dependencies = [
  "dotenv",
  "mongodb",
+ "rand",
  "rocket",
  "rocket_dyn_templates",
  "rust-argon2",
