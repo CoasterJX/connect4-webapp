@@ -124,12 +124,10 @@ fn rocket() -> _ {
 
     let db_user = UserRepo::init();
     let db_board_active = BoardRepo::init(COL_BOARD);
-    let db_board_hist = BoardRepo::init(COL_HIST);
     rocket::build()
         .attach(Cors)
         .manage(db_user)
         .manage(db_board_active)
-        .manage(db_board_hist)
         .mount("/", routes![create_user])
         .mount("/", routes![get_user])
         .mount("/", routes![get_all_users])

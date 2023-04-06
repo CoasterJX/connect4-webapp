@@ -72,7 +72,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
 
             // case when the opposite is computer
             if b.get_next_player() == COMPUTER_STR {
-                let (_, best_move) = b.alpha_beta(
+                let mut b_sim = b.clone();
+                let (_, best_move) = b_sim.alpha_beta(
                     b.get_next_player(),
                     i64::MIN,
                     i64::MAX,
