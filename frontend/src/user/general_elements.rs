@@ -20,12 +20,10 @@ pub fn side_bar() -> Html {
                 <a href="/user/register">{"Register"}</a><br /><br />
 
                 <a href="/user/guide">{"How to Play Connect4"}</a>
-                <a href="/user/play-computer">{"Play Connect4 With Computer"}</a>
-                <a href="/user/play-human">{"PlayConnect4 with Another Player"}</a><br /><br />
+                <a href="/user/guide-TOOT">{"How to Play TOOT-OTTO"}</a><br /><br />
 
-                <a href="/user/guide-TOOT">{"How to Play TOOT-OTTO"}</a>
-                <a href="/user/play-computer-TOOT">{"Play TOOT-OTTO With Computer"}</a>
-                <a href="/user/play-human-TOOT">{"Play TOOT-OTTO With Another Player"}</a><br /><br />
+                <a href="/user/play-computer">{"Play With Computer"}</a>
+                <a href="/user/play-human">{"Play With Another Player"}</a><br /><br />
 
                 <a href="/user/history">{"View Game History"}</a>
                 <a href="/user/scoreboard">{"Score Board"}</a><br /><br />

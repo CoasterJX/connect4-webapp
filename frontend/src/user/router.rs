@@ -127,7 +127,6 @@ fn user_login() -> Html {
                     .json::<serde_json::Value>()
                     .await
                     .unwrap();
-                log!(user["title"].to_string());
             }
         });
     });
@@ -164,7 +163,6 @@ fn user_register() -> Html {
             .value();
 
         if name_input.contains("_") {
-            log!("Error");
             let _ = document()
                 .get_element_by_id("register-msg")
                 .unwrap()
@@ -175,7 +173,6 @@ fn user_register() -> Html {
             let create_user_uri = format!("{}/user/create", BACKEND_URI);
             let get_user_uri =
                 format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
-            log!("Here");
 
             let registernav = navigator.clone();
 
@@ -195,15 +192,12 @@ fn user_register() -> Html {
                     .await
                     .unwrap();
 
-                log!("Here2");
-
                 if !response["status"]["success"].as_bool().unwrap() {
                     let errormessage = response["status"]["msg"]
                         .to_string()
                         .replace("\\", "")
                         .replace("\"", "");
 
-                    log!("Here4");
                     document()
                         .get_element_by_id("register-msg")
                         .unwrap()
@@ -212,7 +206,6 @@ fn user_register() -> Html {
                         .set_inner_html(format!("Register failed! {}", errormessage).as_str());
                     //.set_node_value(Some("Login failed! Check your user name & password."));
                 } else {
-                    log!("Here3");
                     let _ = document()
                         .get_element_by_id("register-msg")
                         .unwrap()
@@ -263,11 +256,6 @@ fn user_guide() -> Html {
 
 #[function_component(UserPlayComputer)]
 fn user_play_computer() -> Html {
-    let navigator = use_navigator().unwrap();
-    let mut userName = Arc::new(Mutex::new(""));
-    let mut boardWidth = -1;
-    let mut boardHeight = -1;
-
     let login_onclick = Callback::from(move |_event: MouseEvent| {
         let name_input = document()
             .get_element_by_id("player-name")
@@ -284,7 +272,6 @@ fn user_play_computer() -> Html {
             .value();
 
         if name_input.contains("_") {
-            log!("Error");
             let _ = document()
                 .get_element_by_id("login-msg")
                 .unwrap()
@@ -293,11 +280,6 @@ fn user_play_computer() -> Html {
                 .set_inner_html("Login failed! Do not include \"_\" in your username.");
         } else {
             let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
-            // let get_user_uri =
-            //     format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
-            log!("Here");
-
-            // let registernav = navigator.clone();
 
             wasm_bindgen_futures::spawn_local(async move {
                 let client = reqwest_wasm::Client::new();
@@ -315,24 +297,21 @@ fn user_play_computer() -> Html {
                     .await
                     .unwrap();
 
-                log!("Here2");
-
                 if !response["exists"].as_bool().unwrap() {
-                    // let errormessage = response["status"]["msg"]
-                    //     .to_string()
-                    //     .replace("\\", "")
-                    //     .replace("\"", "");
-
-                    log!("Here4");
                     document()
                         .get_element_by_id("login-msg")
                         .unwrap()
                         .dyn_into::<HtmlHeadingElement>()
                         .unwrap()
                         .set_inner_html("Login failed! User password combination does not exist!");
-                    //.set_node_value(Some("Login failed! Check your user name & password."));
                 } else {
-                    log!("Here3");
+                    let _ = document()
+                        .get_element_by_id("login-msg")
+                        .unwrap()
+                        .dyn_into::<HtmlHeadingElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: none");
+
                     let _ = document()
                         .get_element_by_id("dimension-prompt")
                         .unwrap()
@@ -348,20 +327,18 @@ fn user_play_computer() -> Html {
                         .set_attribute("style", "display: ");
 
                     let _ = document()
-                        .get_element_by_id("player-name")
+                        .get_element_by_id("mode-prompt")
                         .unwrap()
-                        .dyn_into::<HtmlInputElement>()
+                        .dyn_into::<HtmlDivElement>()
                         .unwrap()
-                        .set_attribute("readonly", "true");
+                        .set_attribute("style", "display: ");
 
                     let _ = document()
-                        .get_element_by_id("player-pwd")
+                        .get_element_by_id("login-prompt")
                         .unwrap()
-                        .dyn_into::<HtmlInputElement>()
+                        .dyn_into::<HtmlDivElement>()
                         .unwrap()
-                        .set_attribute("readonly", "true");
-                    // let userNamePtr = userName.clone();
-                    // *userNamePtr.lock().unwrap() = name_input.as_str();
+                        .set_attribute("style", "display: none");
                 }
             });
         }
@@ -381,6 +358,15 @@ fn user_play_computer() -> Html {
             .dyn_into::<HtmlInputElement>()
             .unwrap()
             .value();
+
+        let mode = document()
+            .get_element_by_id("board-mode")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
 
         let imgprefix = "<img ";
         let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
@@ -408,7 +394,6 @@ fn user_play_computer() -> Html {
             .unwrap()
             .set_inner_html((&finalString).as_str());
 
-        log!("Here5");
         let _ = document()
             .get_element_by_id("column-prompt")
             .unwrap()
@@ -435,7 +420,7 @@ fn user_play_computer() -> Html {
                             .unwrap()
                             .value(),
                 "player_2": "*",
-                "mode": [false, false, false, false],
+                "mode": pattern,
                 "difficulty": document()
                             .get_element_by_id("board-difficulty")
                             .unwrap()
@@ -452,43 +437,29 @@ fn user_play_computer() -> Html {
                 .await
                 .unwrap();
 
-            log!("Here2");
-
             if !response["status"]["success"].as_bool().unwrap() {
-                // let errormessage = response["status"]["msg"]
-                //     .to_string()
-                //     .replace("\\", "")
-                //     .replace("\"", "");
-
                 log!("Board generation failed");
-                // document()
-                //     .get_element_by_id("login-msg")
-                //     .unwrap()
-                //     .dyn_into::<HtmlHeadingElement>()
-                //     .unwrap()
-                //     .set_inner_html("Login failed! User password combination does not exist!");
-                //.set_node_value(Some("Login failed! Check your user name & password."));
             } else {
-                log!("Board generation succeded");
+                let _ = document()
+                    .get_element_by_id("dimension-prompt")
+                    .unwrap()
+                    .dyn_into::<HtmlDivElement>()
+                    .unwrap()
+                    .set_attribute("style", "display: none");
 
                 let _ = document()
-                    .get_element_by_id("board-difficulty")
+                    .get_element_by_id("difficulty-prompt")
                     .unwrap()
-                    .dyn_into::<HtmlInputElement>()
+                    .dyn_into::<HtmlDivElement>()
                     .unwrap()
-                    .set_attribute("readonly", "true");
+                    .set_attribute("style", "display: none");
+
                 let _ = document()
-                    .get_element_by_id("board-width")
+                    .get_element_by_id("mode-prompt")
                     .unwrap()
-                    .dyn_into::<HtmlInputElement>()
+                    .dyn_into::<HtmlDivElement>()
                     .unwrap()
-                    .set_attribute("readonly", "true");
-                let _ = document()
-                    .get_element_by_id("board-height")
-                    .unwrap()
-                    .dyn_into::<HtmlInputElement>()
-                    .unwrap()
-                    .set_attribute("readonly", "true");
+                    .set_attribute("style", "display: none");
             }
         });
     });
@@ -503,8 +474,17 @@ fn user_play_computer() -> Html {
             .parse::<i64>()
             .unwrap()
             - 1;
+
+        let mode = document()
+            .get_element_by_id("board-mode")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
         // Make the move
-        let create_board_uri = format!("{}/board/create", BACKEND_URI);
+        let create_board_uri = format!("{}/board/move", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
@@ -538,7 +518,7 @@ fn user_play_computer() -> Html {
                                     .unwrap()
                                     .value(),
                         "player_2": "*",
-                        "mode": [false, false, false, false],
+                        "mode": pattern,
                         "difficulty": document()
                                     .get_element_by_id("board-difficulty")
                                     .unwrap()
@@ -548,7 +528,7 @@ fn user_play_computer() -> Html {
                                     .parse::<i64>()
                                     .unwrap()
                     },
-                    "col": 2}))
+                        "col": column}))
                 .send()
                 .await
                 .unwrap()
@@ -556,95 +536,131 @@ fn user_play_computer() -> Html {
                 .await
                 .unwrap();
 
-            log!("Here2");
+            log!("{:#?}", response["winner"].to_string());
 
             if !response["status"]["success"].as_bool().unwrap() {
-                // let errormessage = response["status"]["msg"]
-                //     .to_string()
-                //     .replace("\\", "")
-                //     .replace("\"", "");
-
                 log!("Make move failed");
-                // document()
-                //     .get_element_by_id("login-msg")
-                //     .unwrap()
-                //     .dyn_into::<HtmlHeadingElement>()
-                //     .unwrap()
-                //     .set_inner_html("Login failed! User password combination does not exist!");
-                //.set_node_value(Some("Login failed! Check your user name & password."));
             } else {
-                log!("Board generation succeded");
-                // let next_row = response["next_row"];
-                // let next_column = response["next_col"];
-                // let _ = document()
-                //     .get_element_by_id(format!("{}-{}", next_row, next_column))
-                //     .unwrap()
-                //     .dyn_into::<HtmlDivElement>()
-                //     .unwrap()
-                //     .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                let human_row = response["human_row"].clone().to_string();
+                let human_column = response["human_col"].clone().to_string();
+                let _ = document()
+                    .get_element_by_id(
+                        format!("{}-{}", human_row.clone(), human_column.clone()).as_str(),
+                    )
+                    .unwrap()
+                    .dyn_into::<HtmlImageElement>()
+                    .unwrap()
+                    .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
 
-                // let _ = document()
-                //     .get_element_by_id("difficulty-prompt")
-                //     .unwrap()
-                //     .dyn_into::<HtmlDivElement>()
-                //     .unwrap()
-                //     .set_attribute("style", "display: ");
+                let cmput_row = response["cmput_row"].clone().to_string();
+                let cmput_column = response["cmput_col"].clone().to_string();
+
+                if cmput_row != "-1" {
+                    let _ = document()
+                        .get_element_by_id(
+                            format!("{}-{}", cmput_row.clone(), cmput_column.clone()).as_str(),
+                        )
+                        .unwrap()
+                        .dyn_into::<HtmlImageElement>()
+                        .unwrap()
+                        .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                }
+
+                if response["winner"].as_str().unwrap().to_owned().len() != 0 {
+                    let mut winner = String::new();
+                    if response["winner"].as_str().unwrap().to_owned() == "*".to_owned() {
+                        winner = "Computer won the game!".to_owned();
+                    } else if response["winner"].as_str().unwrap().to_owned() == "^".to_owned() {
+                        winner = "Draw".to_owned();
+                    } else {
+                        winner = format!(
+                            "{} won the game!",
+                            response["winner"].as_str().unwrap().to_owned().clone()
+                        );
+                    }
+
+                    document()
+                        .get_element_by_id("winner-msg")
+                        .unwrap()
+                        .dyn_into::<HtmlHeadingElement>()
+                        .unwrap()
+                        .set_inner_html(winner.as_str());
+
+                    let _ = document()
+                        .get_element_by_id("restart-button-prompt")
+                        .unwrap()
+                        .dyn_into::<HtmlDivElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: ");
+
+                    let _ = document()
+                        .get_element_by_id("column-prompt")
+                        .unwrap()
+                        .dyn_into::<HtmlDivElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: none");
+                }
             }
         });
     });
 
-    let testing = Callback::from(move |_event: MouseEvent| {
-        let _ = document()
-            .get_element_by_id("1")
-            .unwrap()
-            .dyn_into::<HtmlImageElement>()
-            .unwrap()
-            .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
-    });
-    //<div class=\"flex-container\"><img src= \"https:\\/\\/i.ibb.co/H2CPYvY/fotor-2023-4-1-20-30-22.png\" alt=\"Cell\"/></div>
     html! {
         <div class="sidenavpadding">
             <div>
-
-                <h5 style="padding-top: 72px">{"Enter your name"}</h5>
-                <div class="flex-container">
-                    <input id="player-name" placeholder="Your name" style="margin-left: 0px" readonly=false/>
-                    <input id="player-pwd" placeholder="Password" style="margin-left: 0px" readonly=false/>
-                    <button class="button" onclick={login_onclick}>{ "Start game" }</button>
+                <div id="login-prompt">
+                    <h5 style="padding-top: 72px">{"Enter your name"}</h5>
+                    <div class="flex-container">
+                        <input id="player-name" placeholder="Your name" style="margin-left: 0px" readonly=false/>
+                        <input id="player-pwd" placeholder="Password" style="margin-left: 0px" type = "password" readonly=false/>
+                        <button class="button" onclick={login_onclick}>{ "Start game" }</button>
+                    </div>
                 </div>
 
                 <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
 
-                <div id="dimension-prompt" style="display: none">
-                    <h5>{"Enter board dimensions"}</h5>
-                    <div class="flex-container">
-                        <input id="board-width" placeholder="Width" style="margin-left: 0px" readonly=false/>
-                        <input id="board-height" placeholder="Height" readonly=false/>
+                <div class="flex-container">
+                    <div id="dimension-prompt" style="display: none">
+                        <h5 style="padding-top: 72px">{"Enter board dimensions"}</h5>
+                        <div class="flex-container">
+                            <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                            <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
+                        </div>
                     </div>
-                </div>
 
-                <div id="difficulty-prompt" style="display: none">
-                    <h5>{"Enter difficulty"}</h5>
-                    <div class="flex-container">
-                        <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" readonly=false/>
-                        <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                    <div id="difficulty-prompt" style="display: none">
+                        <h5 style="padding-top: 72px">{"Enter difficulty"}</h5>
+                        <div class="flex-container">
+                            <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                        </div>
+                    </div>
+
+                    <div id="mode-prompt" style="display: none">
+                        <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
+                        <div class="flex-container">
+                            <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                            <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                        </div>
                     </div>
                 </div>
 
                 <div id="column-prompt" style="display: none">
+                    <h5 style="padding-top: 72px">{"Enter column number to place a checker"}</h5>
                     <div class="flex-container" >
-                        <input id="column-number" placeholder="Column number" style="margin-left: 0px" readonly=false/>
-                        <button class="button" onclick={makeMove}>{ "Confirm" }</button>
+                        <input id="column-number" placeholder="Column number" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                        <button id = "column-button" class="button" onclick={makeMove}>{ "Confirm" }</button>
                     </div>
                 </div>
             </div><br />
 
+            <div id = "restart-button-prompt"  style="display: none">
+                <a href="/user/play-computer">{"Restart"}</a>
+            </div>
+
+            <h5 id="winner-msg" style="color: green; font-weight: normal">{ "" }</h5>
+
             <div id = "board">
                 // Board goes here
             </div><br/>
-
-            <img id = "1" src= "https://i.ibb.co/GFk3XzG/cell-empty.png" alt="Cell" />
-            <button class="button" onclick={testing}>{ "test" }</button>
         </div>
     }
 }
