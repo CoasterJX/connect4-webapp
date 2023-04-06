@@ -4,6 +4,9 @@ use serde::{Serialize, Deserialize};
 
 use super::general_model::GeneralStatus;
 
+use std::io;
+use std::io::Write;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Board {
     pub width: i64,
@@ -19,6 +22,25 @@ pub struct Board {
 }
 
 impl Board {
+    pub fn print(&self) -> String {
+        // Start with the empty string
+        let mut board_str = String::new();
+
+        for row in 0..self.height {
+            board_str.push('|');
+            for col in 0..self.width {
+                board_str.push_str(&self.board[row as usize][col as usize]);
+                board_str.push_str("|");
+            }
+            board_str.push_str("\n");
+        }
+        for _ in 0..(self.width*2+1) {
+            board_str.push_str("-");
+        }
+        board_str.push_str("\n");
+        return board_str;
+    }
+
     /*
     Get a vector of all movable columns that can be performed on the board.
      */
@@ -214,6 +236,67 @@ impl Board {
      */
     pub fn is_draw(&self) -> bool {
         return self.available_moves().len() == 0;
+    }
+
+    /*
+    Input a player's checker piece and get a move for them.
+     */
+    pub fn get_player_move(&self, ox: String) -> i64 {
+        let mut input: String = String::new();
+        loop {
+            println!("{}'s choice: ", ox);
+            io::stdout().flush().unwrap();
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            match input.trim().parse() {
+                Ok(p) => {
+                    let player_move: i64 = p;
+                    if self.allows_move(&player_move) {
+                        return p;
+                    } else {
+                        println!("Move is not allowed. Please try again.");
+                    }
+                },
+                Err(_) => {
+                    println!("Invalid input. Please try again.")
+                }
+            }
+        }
+    }
+
+    /*
+    Prints out who won the game and the final game board.
+     */
+    pub fn print_congrats(&self) {
+        println!("{} wins -- Congratulations!", self.last_player);
+        self.print();
+    }
+
+    /*
+    Hosts a game which can be played between two players.
+     */
+    pub fn host_game(&mut self) {
+        println!("Welcome!");
+        let mut gameOver: bool = false;
+        let mut ox: String = self.player_1.clone();
+        while !gameOver {
+            self.print();
+            if ox == "" {
+                let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), -2, 2, self.difficulty);
+                self.perform_move(col_move, ox.clone());
+            } else {
+                let col_move: i64 = self.get_player_move(ox.clone());
+                self.perform_move(col_move, ox.clone());
+            }
+            if self.has_winner() {
+                gameOver = true;
+            }
+            if ox == self.player_1 {
+                ox = self.player_2.clone();
+            } else {
+                ox = self.player_1.clone();
+            }
+        }
+        self.print_congrats();
     }
 
     /*

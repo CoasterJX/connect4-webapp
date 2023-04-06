@@ -126,10 +126,11 @@ fn rocket() -> _ {
 
 
             let db: BoardRepo = BoardRepo::init();
-            let game_board: Board = match db.get_board(&Board::new(width, height, player_1, player_2, mode, difficulty)) {
+            let mut game_board: Board = match db.get_board(&Board::new(width, height, player_1, player_2, mode, difficulty)) {
                 Some(board) => board,
                 None => Board::empty(),
             };
+            game_board.host_game();
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }
