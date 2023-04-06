@@ -53,22 +53,25 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             }
             let human_move = (b.last_row.clone(), b.last_col.clone());
 
-            // case when human wins or draw
-            if b.is_terminal() {
-                match b.is_draw() {
-                    true => return Ok(Json(PerformMoveResponse::new(
-                        (true, ""),
-                        human_move.clone(),
-                        (-1, -1),
-                        DRAW_STR.to_owned()))
-                    ),
-                    false => return Ok(Json(PerformMoveResponse::new(
-                        (true, ""),
-                        human_move.clone(),
-                        (-1, -1),
-                        b.last_player.clone()))),
-                }
-            }
+            // case when human wins, draw, or lose
+            match b._has_winner() {
+                (true, winner) => return Ok(Json(PerformMoveResponse::new(
+                    (true, ""),
+                    human_move.clone(),
+                    (-1, -1),
+                    winner.clone()))),
+                (false, _) => ()
+            };
+            match b.is_draw() {
+                true => return Ok(Json(PerformMoveResponse::new(
+                    (true, ""),
+                    human_move.clone(),
+                    (-1, -1),
+                    DRAW_STR.to_owned()))
+                ),
+                false => (),
+            };
+            assert!(!b.is_terminal());
 
             // case when the opposite is computer
             if b.get_next_player() == COMPUTER_STR {
@@ -88,23 +91,25 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             }
             let cmput_move = (b.last_row.clone(), b.last_col.clone());
 
-            // case when computer wins or draw
-            if b.is_terminal() {
-                match b.is_draw() {
-                    true => return Ok(Json(PerformMoveResponse::new(
-                        (true, ""),
-                        human_move.clone(),
-                        cmput_move.clone(),
-                        DRAW_STR.to_owned()))
-                    ),
-                    false => return Ok(Json(PerformMoveResponse::new(
-                        (true, ""),
-                        human_move.clone(),
-                        cmput_move.clone(),
-                        b.last_player.clone()))
-                    ),
-                }
-            }
+            // case when computer wins, draw, or lose
+            match b._has_winner() {
+                (true, winner) => return Ok(Json(PerformMoveResponse::new(
+                    (true, ""),
+                    human_move.clone(),
+                    cmput_move.clone(),
+                    winner.clone()))),
+                (false, _) => ()
+            };
+            match b.is_draw() {
+                true => return Ok(Json(PerformMoveResponse::new(
+                    (true, ""),
+                    human_move.clone(),
+                    cmput_move.clone(),
+                    DRAW_STR.to_owned()))
+                ),
+                false => (),
+            };
+            assert!(!b.is_terminal());
 
             // update the board into mongodb & send the computer move if there is one
             match db.update_board(&b) {
