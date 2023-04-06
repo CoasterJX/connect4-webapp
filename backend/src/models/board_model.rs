@@ -165,10 +165,25 @@ impl Board {
         }
     }
 
+    fn pattern_enemy(&self, ox: &String, bit: &bool) -> String {
+        let rev = HashMap::from([
+            (self.player_1.clone(), self.player_2.clone()),
+            (self.player_2.clone(), self.player_1.clone()),
+        ]);
+        match bit {
+            false => rev.get(ox.as_str()).unwrap().to_string(),
+            true => ox.clone(),
+        }
+    }
+
+    pub fn has_winner(&self) -> bool {
+        self._has_winner().0
+    }
+
     /*
     Check if there is a winner.
      */
-    pub fn has_winner(&self) -> bool {
+    pub fn _has_winner(&self) -> (bool, String) {
 
         let row = self.last_row;
         let col = self.last_col;
@@ -176,27 +191,39 @@ impl Board {
         
         // No moves made on the board so far
         if row == -1 && col == -1 {
-            return false;
+            return (false, "".to_owned());
         }
 
         // Checks to see if there is a horizontal win
         for c in max(0, col - 3)..min(self.width-3, col+1) {
-            if self.board[row as usize][c as usize] == self.pattern(&ox, &self.mode[0])
-            && self.board[row as usize][(c+1) as usize] == self.pattern(&ox, &self.mode[1])
-            && self.board[row as usize][(c+2) as usize] == self.pattern(&ox, &self.mode[2])
-            && self.board[row as usize][(c+3) as usize] == self.pattern(&ox, &self.mode[3]) {
-                return true;
+
+            let mut win = true;
+            for i in 0..4 {
+                win = win && self.board[row as usize][(c+i) as usize] == self.pattern(&ox, &self.mode[i as usize]);
             }
+            if win { return (win, self.last_player.clone()); }
+
+            let mut lose = true;
+            for i in 0..4 {
+                lose = lose && self.board[row as usize][(c+i) as usize] == self.pattern_enemy(&ox, &self.mode[i as usize]);
+            }
+            if lose { return (lose, self.get_next_player().clone()); }
         }
 
         // Checks to see if there is a vertical win
         if row < self.height - 3 {
-            if self.board[row as usize][col as usize] == self.pattern(&ox, &self.mode[0])
-            && self.board[(row+1) as usize][col as usize] == self.pattern(&ox, &self.mode[1])
-            && self.board[(row+2) as usize][col as usize] == self.pattern(&ox, &self.mode[2])
-            && self.board[(row+3) as usize][col as usize] == self.pattern(&ox, &self.mode[3]) {
-                return true;
+
+            let mut win = true;
+            for i in 0..4 {
+                win = win && self.board[(row+i) as usize][col as usize] == self.pattern(&ox, &self.mode[i as usize]);
             }
+            if win { return (win, self.last_player.clone()); }
+
+            let mut lose = true;
+            for i in 0..4 {
+                lose = lose && self.board[(row+i) as usize][col as usize] == self.pattern_enemy(&ox, &self.mode[i as usize]);
+            }
+            if lose { return (lose, self.get_next_player().clone()); }
         }
 
         // Checks to see if there is a win on the upper right diagonal
@@ -204,12 +231,18 @@ impl Board {
             let r = row - i;
             let c = col - i;
             if 0 <= r && r < self.height-3 && 0 <= c && c < self.width-3 {
-                if self.board[r as usize][c as usize] == self.pattern(&ox, &self.mode[0])
-                && self.board[(r+1) as usize][(c+1) as usize] == self.pattern(&ox, &self.mode[1])
-                && self.board[(r+2) as usize][(c+2) as usize] == self.pattern(&ox, &self.mode[2])
-                && self.board[(r+3) as usize][(c+3) as usize] == self.pattern(&ox, &self.mode[3]) {
-                    return true;
+
+                let mut win = true;
+                for i in 0..4 {
+                    win = win && self.board[(r+i) as usize][(c+i) as usize] == self.pattern(&ox, &self.mode[i as usize])
                 }
+                if win { return (win, self.last_player.clone()); }
+
+                let mut lose = true;
+                for i in 0..4 {
+                    lose = lose && self.board[(r+i) as usize][(c+i) as usize] == self.pattern_enemy(&ox, &self.mode[i as usize])
+                }
+                if lose { return (lose, self.get_next_player().clone()); }
             }
         }
 
@@ -218,17 +251,23 @@ impl Board {
             let r = row - i;
             let c = col + i;
             if 0 <= r && r < self.height-3 && 3 <= c && c < self.width {
-                if self.board[r as usize][c as usize] == self.pattern(&ox, &self.mode[0])
-                && self.board[(r+1) as usize][(c-1) as usize] == self.pattern(&ox, &self.mode[1])
-                && self.board[(r+2) as usize][(c-2) as usize] == self.pattern(&ox, &self.mode[2])
-                && self.board[(r+3) as usize][(c-3) as usize] == self.pattern(&ox, &self.mode[3]) {
-                    return true;
+
+                let mut win = true;
+                for i in 0..4 {
+                    win = win && self.board[(r+i) as usize][(c-i) as usize] == self.pattern(&ox, &self.mode[i as usize])
                 }
+                if win { return (win, self.last_player.clone()); }
+
+                let mut lose = true;
+                for i in 0..4 {
+                    lose = lose && self.board[(r+i) as usize][(c-i) as usize] == self.pattern_enemy(&ox, &self.mode[i as usize])
+                }
+                if lose { return (lose, self.get_next_player().clone()); }
             }
         }
 
         // no winner if none of the above is satisfied
-        return false;
+        return (false, "".to_owned());
     }
 
     /*
@@ -303,8 +342,10 @@ impl Board {
     Check who is the winner. Should only be called after is_terminal.
      */
     pub fn game_value(&self) -> i64 {
-        if self.has_winner() {
-            if self.last_player == self.player_1 {
+
+        let (hw, winner) = self._has_winner();
+        if hw {
+            if winner == self.player_1 {
                 return 1;
             } else {
                 return -1;
@@ -391,9 +432,30 @@ pub struct PerformMoveRequest {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PerformMoveResponse {
     pub status: GeneralStatus,
-    pub next_row: i64,
-    pub next_col: i64,
+    pub human_row: i64,
+    pub human_col: i64,
+    pub cmput_row: i64,
+    pub cmput_col: i64,
     pub winner: String,
+}
+
+impl PerformMoveResponse {
+
+    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), winner: String) -> Self {
+
+        let s = if status.0 {
+            GeneralStatus::success()
+        } else { GeneralStatus::failure(status.1) };
+
+        Self {
+            status: s,
+            human_row: human_move.0,
+            human_col: human_move.1,
+            cmput_row: cmput_move.0,
+            cmput_col: cmput_move.1,
+            winner
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

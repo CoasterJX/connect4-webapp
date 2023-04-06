@@ -1,7 +1,7 @@
 mod api;
+mod command_line_interface;
 mod models;
 mod repository;
-mod command_line_interface;
 
 #[macro_use]
 extern crate rocket;
@@ -10,11 +10,16 @@ use std::env;
 use std::io;
 use std::io::Write;
 
-use api::user_api::*;
 use api::board_api::*;
+use api::user_api::*;
 use models::board_model::Board;
-use repository::user_repo::UserRepo;
-use repository::board_repo::BoardRepo;
+
+use repository::{
+    user_repo::UserRepo,
+    board_repo::BoardRepo,
+    db_type::*
+};
+
 use rocket::{
     http::Header,
     routes,
@@ -22,13 +27,9 @@ use rocket::{
     Response
 };
 
-use rocket::fairing::{
-    Fairing,
-    Info,
-    Kind
-};
+use rocket::fairing::{Fairing, Info, Kind};
 
-use command_line_interface::{welcome};
+use command_line_interface::welcome;
 
 pub struct Cors;
 
@@ -49,14 +50,11 @@ impl Fairing for Cors {
         ));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
-
     }
 }
 
-
 #[launch]
 fn rocket() -> _ {
-
     // let allowed_origins = AllowedOrigins::all();
     // let cors = CorsOptions {
     //     allowed_origins,
@@ -122,10 +120,7 @@ fn rocket() -> _ {
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut input).unwrap();
             height = input.trim().parse().unwrap();
-
-
-
-            let db: BoardRepo = BoardRepo::init();
+            let db: BoardRepo = BoardRepo::init(COL_BOARD);
             let mut game_board: Board = match db.get_board(&Board::new(width, height, player_1, player_2, mode, difficulty)) {
                 Some(board) => board,
                 None => Board::empty(),
@@ -136,12 +131,12 @@ fn rocket() -> _ {
         }
     }
 
-    let db = UserRepo::init();
-    let db_board = BoardRepo::init();
+    let db_user = UserRepo::init();
+    let db_board_active = BoardRepo::init(COL_BOARD);
     rocket::build()
         .attach(Cors)
-        .manage(db)
-        .manage(db_board)
+        .manage(db_user)
+        .manage(db_board_active)
         .mount("/", routes![create_user])
         .mount("/", routes![get_user])
         .mount("/", routes![get_all_users])
