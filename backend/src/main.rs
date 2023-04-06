@@ -73,7 +73,7 @@ fn rocket() -> _ {
             // Initialize the variables that are needed //
             let mut player_1: String = String::new();
             let mut player_2: String = String::new();
-            let mut mode: String = String::new();
+            let mut mode: Vec<bool> = vec![];
             let mut difficulty: i64 = i64::from(1);
             let mut width: i64 = i64::from(1);
             let mut height: i64 = i64::from(1);
@@ -90,8 +90,17 @@ fn rocket() -> _ {
 
             // Get the game mode //
             println!("Enter the game mode: ");
+            let mut input: String = String::new();
             io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut mode).unwrap();
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            mode = input.chars().map(|c| {
+                match c {
+                    'T' => false,
+                    'O' => true,
+                    _ => false
+                }
+            })
+            .collect();
 
             // Get the difficulty //
             println!("Enter the difficulty level: ");
@@ -114,8 +123,10 @@ fn rocket() -> _ {
             let _ = io::stdin().read_line(&mut input).unwrap();
             height = input.trim().parse().unwrap();
 
+
+
             let db: BoardRepo = BoardRepo::init();
-            let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
+            let game_board: Board = match db.get_board(&Board::new(width, height, player_1, player_2, mode, difficulty)) {
                 Some(board) => board,
                 None => Board::empty(),
             };
