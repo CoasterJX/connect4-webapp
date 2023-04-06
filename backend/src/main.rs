@@ -71,7 +71,7 @@ fn rocket() -> _ {
             // Initialize the variables that are needed //
             let mut player_1: String = String::new();
             let mut player_2: String = String::new();
-            let mut mode: String = String::new();
+            let mut mode: Vec<bool> = vec![];
             let mut difficulty: i64 = i64::from(1);
             let mut width: i64 = i64::from(1);
             let mut height: i64 = i64::from(1);
@@ -80,16 +80,28 @@ fn rocket() -> _ {
             println!("Enter player 1 (Press ENTER as computer): ");
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut player_1).unwrap();
+            player_1 = player_1.trim().to_string();
 
             // Get who is player 2 //
             println!("Enter player 2 (Press ENTER as computer): ");
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut player_2).unwrap();
+            player_2 = player_2.trim().to_string();
 
             // Get the game mode //
             println!("Enter the game mode: ");
+            let mut input: String = String::new();
             io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut mode).unwrap();
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            input = input.trim().to_string();
+            mode = input.chars().map(|c| {
+                match c {
+                    'T' => false,
+                    'O' => true,
+                    _ => false
+                }
+            })
+            .collect();
 
             // Get the difficulty //
             println!("Enter the difficulty level: ");
@@ -111,12 +123,13 @@ fn rocket() -> _ {
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut input).unwrap();
             height = input.trim().parse().unwrap();
-
             let db: BoardRepo = BoardRepo::init(COL_BOARD);
-            // let game_board: Board = match db.get_board(&player_1, &player_2, &mode, &difficulty, &width, &height) {
-            //     Some(board) => board,
-            //     None => Board::empty(),
-            // };
+            let mut game_board: Board = match db.get_board(&Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone())) {
+                Some(board) => board,
+                None => Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone()),
+            };
+            game_board.host_game();
+            game_board.print();
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }

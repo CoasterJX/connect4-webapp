@@ -5,6 +5,9 @@ use rand::seq::SliceRandom;
 
 use super::general_model::GeneralStatus;
 
+use std::io;
+use std::io::Write;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Board {
     pub width: i64,
@@ -20,6 +23,31 @@ pub struct Board {
 }
 
 impl Board {
+    pub fn print(&self) -> String {
+        // Start with the empty string
+        let mut board_str = String::new();
+
+        for row in 0..self.height {
+            board_str.push('|');
+            for col in 0..self.width {
+                if self.board[row as usize][col as usize] == self.player_1 {
+                    board_str.push_str("T");
+                } else if self.board[row as usize][col as usize] == self.player_2 {
+                    board_str.push_str("O");
+                } else {
+                    board_str.push_str(&self.board[row as usize][col as usize]);
+                }
+                board_str.push_str("|");
+            }
+            board_str.push_str("\n");
+        }
+        for _ in 0..(self.width*2+1) {
+            board_str.push_str("-");
+        }
+        board_str.push_str("\n");
+        return board_str;
+    }
+
     /*
     Get a vector of all movable columns that can be performed on the board.
      */
@@ -89,7 +117,7 @@ impl Board {
     - difficulty: computer difficulty level, only useful when computer is involved.
      */
     pub fn new(w: i64, h: i64, p1: String, p2: String, m: Vec<bool>, d: i64) -> Self {
-        let mut board_init = vec![];
+        let mut board_init: Vec<Vec<String>> = vec![];
         for r in 0..h {
             board_init.push(vec![]);
             for _ in 0..w {
@@ -254,6 +282,71 @@ impl Board {
      */
     pub fn is_draw(&self) -> bool {
         return self.available_moves().len() == 0;
+    }
+
+    /*
+    Input a player's checker piece and get a move for them.
+     */
+    pub fn get_player_move(&self, ox: String) -> i64 {
+        let mut input: String = String::new();
+        loop {
+            println!("{}'s choice: ", ox);
+            let _ = io::stdin().read_line(&mut input).unwrap();
+            match input.trim().parse() {
+                Ok(p) => {
+                    let player_move: i64 = p;
+                    if self.allows_move(&player_move) {
+                        return p;
+                    } else {
+                        println!("Move is not allowed. Please try again.");
+                    }
+                },
+                Err(_) => {
+                    println!("Invalid input. Please try again.")
+                }
+            }
+        }
+    }
+
+    /*
+    Prints out who won the game and the final game board.
+     */
+    pub fn print_congrats(&self) {
+        if self.last_player == "" {
+            println!("Computer wins -- Congratulations!");
+        } else {
+            println!("{} wins -- Congratulations!", self.last_player);
+        }
+        println!("{}", self.print());
+    }
+
+    /*
+    Hosts a game which can be played between two players.
+     */
+    pub fn host_game(&mut self) {
+        println!("Welcome!");
+        let mut gameOver: bool = false;
+        let mut ox: String = self.player_1.clone();
+        while !gameOver {
+            println!("{}", self.print());
+            if ox == "" {
+                let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), -2, 2, self.difficulty);
+                self.perform_move(col_move, ox.clone());
+                println!("Computer performed move {}.", col_move);
+            } else {
+                let col_move: i64 = self.get_player_move(ox.clone());
+                self.perform_move(col_move, ox.clone());
+            }
+            if self.has_winner() {
+                gameOver = true;
+            }
+            if ox == self.player_1 {
+                ox = self.player_2.clone();
+            } else {
+                ox = self.player_1.clone();
+            }
+        }
+        self.print_congrats();
     }
 
     /*

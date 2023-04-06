@@ -86,8 +86,13 @@ impl BoardRepo {
         let board_detail = self.col
             .find_one(filter, None)
             .ok();
+        
+        match board_detail {
+            Some(x) => x,
+            None => None
+        }
 
-        return board_detail.unwrap();
+        //return board_detail.unwrap();
     }
 
     // get all boards from mongodb
