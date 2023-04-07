@@ -354,10 +354,18 @@ impl Board {
         let mut ox: String = self.player_1.clone();
         while !game_over {
             println!("{}", self.print());
-            if ox == "" {
+            if ox == "" || ox == "*" {
                 let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), i64::MIN, i64::MAX, self.difficulty);
                 self.perform_move(col_move, ox.clone());
-                println!("Computer performed move {}.", col_move);
+                if self.player_2 == "*" {  // This checks if we are playing a computer vs computer game.
+                    if ox == "" {
+                        println!("Computer 1 performed move {}.", col_move);
+                    } else {
+                        println!("Computer 2 performed move {}.", col_move);
+                    }
+                } else {  // We are playing a human vs computer game.
+                    println!("Computer performed move {}.", col_move);
+                }
             } else {
                 let col_move: i64 = self.get_player_move(ox.clone());
                 self.perform_move(col_move, ox.clone());
