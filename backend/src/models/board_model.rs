@@ -90,7 +90,7 @@ impl Board {
     Check if player can perform move on the specified column.
      */
     pub fn allows_move(&self, col: &i64) -> bool {
-        if *col < 0 && *col >= self.width {
+        if *col < 0 || *col >= self.width {
             return false;
         } else {
             if self.board[0][(*col) as usize] == ' '.to_string() {
@@ -350,9 +350,9 @@ impl Board {
      */
     pub fn host_game(&mut self) {
         println!("Welcome!");
-        let mut gameOver: bool = false;
+        let mut game_over: bool = false;
         let mut ox: String = self.player_1.clone();
-        while !gameOver {
+        while !game_over {
             println!("{}", self.print());
             if ox == "" {
                 let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), i64::MIN, i64::MAX, self.difficulty);
@@ -363,7 +363,7 @@ impl Board {
                 self.perform_move(col_move, ox.clone());
             }
             if self.has_winner() {
-                gameOver = true;
+                game_over = true;
             }
             if ox == self.player_1 {
                 ox = self.player_2.clone();
@@ -406,6 +406,12 @@ impl Board {
     pub fn alpha_beta(&mut self, player: String, mut alpha: i64, mut beta: i64, ply: i64) -> (i64, i64) {
 
         if self.is_terminal() {
+            let game_value = self.game_value();
+            if game_value < 0 {
+                return (game_value - ply, 0);
+            } else if game_value > 0 {
+                return (game_value + ply, 0);
+            }
             return (self.game_value(), 0);
         }
 
