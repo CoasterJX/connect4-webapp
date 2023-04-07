@@ -3,7 +3,7 @@ use crate::{
         board_model::*,
         general_model::GeneralStatus
     },
-    repository::board_repo::BoardRepo
+    repository::{board_repo::BoardRepo, hist_repo::HistRepo}
 };
 
 use rocket::{
@@ -55,20 +55,32 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
 
             // case when human wins, draw, or lose
             match b._has_winner() {
-                (true, winner) => return Ok(Json(PerformMoveResponse::new(
-                    (true, ""),
-                    human_move.clone(),
-                    (-1, -1),
-                    winner.clone()))),
+                (true, winner) => {
+
+                    db.delete_board(&b);
+                    HistRepo::init().push_hist(&b, &winner);
+
+                    return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        (-1, -1),
+                        winner.clone())));
+                },
                 (false, _) => ()
             };
             match b.is_draw() {
-                true => return Ok(Json(PerformMoveResponse::new(
-                    (true, ""),
-                    human_move.clone(),
-                    (-1, -1),
-                    DRAW_STR.to_owned()))
-                ),
+                true => {
+
+                    db.delete_board(&b);
+                    HistRepo::init().push_hist(&b, &DRAW_STR.to_owned());
+
+                    return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        (-1, -1),
+                        DRAW_STR.to_owned()))
+                    );
+                },
                 false => (),
             };
             assert!(!b.is_terminal());
@@ -93,20 +105,33 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
 
             // case when computer wins, draw, or lose
             match b._has_winner() {
-                (true, winner) => return Ok(Json(PerformMoveResponse::new(
-                    (true, ""),
-                    human_move.clone(),
-                    cmput_move.clone(),
-                    winner.clone()))),
+                (true, winner) => {
+
+                    db.delete_board(&b);
+                    HistRepo::init().push_hist(&b, &winner);
+
+                    return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        cmput_move.clone(),
+                        winner.clone()))
+                    )
+                },
                 (false, _) => ()
             };
             match b.is_draw() {
-                true => return Ok(Json(PerformMoveResponse::new(
-                    (true, ""),
-                    human_move.clone(),
-                    cmput_move.clone(),
-                    DRAW_STR.to_owned()))
-                ),
+                true => {
+
+                    db.delete_board(&b);
+                    HistRepo::init().push_hist(&b, &DRAW_STR.to_owned());
+                    
+                    return Ok(Json(PerformMoveResponse::new(
+                        (true, ""),
+                        human_move.clone(),
+                        cmput_move.clone(),
+                        DRAW_STR.to_owned()))
+                    )
+                },
                 false => (),
             };
             assert!(!b.is_terminal());

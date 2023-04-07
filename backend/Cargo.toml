@@ -12,6 +12,7 @@ serde = "1.0.136"
 dotenv = "0.15.0"
 rust-argon2 = "1.0.0"
 rand = "0.8.5"
+chrono = "0.4.24"
 
 [dependencies.mongodb]
 version = "2.2.0"
