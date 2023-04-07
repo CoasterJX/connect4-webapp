@@ -14,6 +14,7 @@ use api::board_api::*;
 use api::user_api::*;
 use models::board_model::Board;
 
+use repository::hist_repo::HistRepo;
 use repository::{
     user_repo::UserRepo,
     board_repo::BoardRepo,
@@ -123,7 +124,7 @@ fn rocket() -> _ {
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut input).unwrap();
             height = input.trim().parse().unwrap();
-            let db: BoardRepo = BoardRepo::init(COL_BOARD);
+            let db: BoardRepo = BoardRepo::init();
             let mut game_board: Board = match db.get_board(&Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone())) {
                 Some(board) => board,
                 None => Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone()),
@@ -136,11 +137,13 @@ fn rocket() -> _ {
     }
 
     let db_user = UserRepo::init();
-    let db_board_active = BoardRepo::init(COL_BOARD);
+    let db_board_active = BoardRepo::init();
+    let db_board_hist = HistRepo::init();
     rocket::build()
         .attach(Cors)
         .manage(db_user)
         .manage(db_board_active)
+        .manage(db_board_hist)
         .mount("/", routes![create_user])
         .mount("/", routes![get_user])
         .mount("/", routes![get_all_users])

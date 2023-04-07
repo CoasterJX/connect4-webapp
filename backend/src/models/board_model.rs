@@ -7,6 +7,25 @@ use super::general_model::GeneralStatus;
 
 use std::io;
 use std::io::Write;
+use chrono::prelude::*;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct HistBoard {
+    pub board: Board,
+    pub date: String,
+    pub winner: String,
+}
+
+impl HistBoard {
+
+    pub fn new(board: Board, winner: String) -> Self {
+        HistBoard {
+            board,
+            date: Local::now().to_string(),
+            winner
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Board {

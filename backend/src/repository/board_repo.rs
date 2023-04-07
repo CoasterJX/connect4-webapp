@@ -16,7 +16,7 @@ pub struct BoardRepo {
 impl BoardRepo {
 
     // initialize a mongodb repo with a collection of boards
-    pub fn init(col_name: &str) -> Self {
+    pub fn init() -> Self {
 
         dotenv().ok();
         let uri = match env::var(ENV_MONGODB) {
@@ -27,7 +27,7 @@ impl BoardRepo {
 
         let client = Client::with_uri_str(uri).unwrap();
         let db = client.database(DB_NAME);
-        let col: Collection<Board> = db.collection(col_name);
+        let col: Collection<Board> = db.collection(COL_BOARD);
         BoardRepo { col }
     }
 
