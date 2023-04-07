@@ -88,6 +88,9 @@ fn rocket() -> _ {
             io::stdout().flush().unwrap();
             let _ = io::stdin().read_line(&mut player_2).unwrap();
             player_2 = player_2.trim().to_string();
+            if player_1 == "" {
+                player_2 = "*".to_string();
+            }
 
             // Get the game mode //
             println!("Enter the game mode: ");
