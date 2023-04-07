@@ -130,7 +130,6 @@ fn rocket() -> _ {
                 None => Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone()),
             };
             game_board.host_game();
-            game_board.print();
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }

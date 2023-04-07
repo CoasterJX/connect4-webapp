@@ -47,6 +47,7 @@ impl Board {
         let mut board_str = String::new();
 
         for row in 0..self.height {
+            // Initialize each row with a |
             board_str.push('|');
             for col in 0..self.width {
                 if self.board[row as usize][col as usize] == self.player_1 {
@@ -60,10 +61,14 @@ impl Board {
             }
             board_str.push_str("\n");
         }
+        // Line of dashes
         for _ in 0..(self.width*2+1) {
             board_str.push_str("-");
         }
         board_str.push_str("\n");
+        for col in 0..self.width {
+            board_str.push_str(&format!(" {}", col));
+        }
         return board_str;
     }
 
@@ -350,7 +355,7 @@ impl Board {
         while !gameOver {
             println!("{}", self.print());
             if ox == "" {
-                let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), -2, 2, self.difficulty);
+                let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), i64::MIN, i64::MAX, self.difficulty);
                 self.perform_move(col_move, ox.clone());
                 println!("Computer performed move {}.", col_move);
             } else {
@@ -394,14 +399,14 @@ impl Board {
         tree. The parameter 'ply' represents the depth of the depth. Increasing the 'ply' value
         returns better moves but also takes longer.
 
-        The function returns two values:
+        The function returns three values:
         1. the score of the optimal move for the player who is to act;
         2. the optimal move
     */
     pub fn alpha_beta(&mut self, player: String, mut alpha: i64, mut beta: i64, ply: i64) -> (i64, i64) {
 
-        if ply < 0 {
-            return (0, 0);
+        if self.is_terminal() {
+            return (self.game_value(), 0);
         }
 
         let init_score = HashMap::from([
@@ -409,8 +414,8 @@ impl Board {
             (self.player_2.clone(), (i64::MAX, self.player_1.clone()))
         ]);
 
-        if self.is_terminal() {
-            return (self.game_value(), 0);
+        if ply <= 0 {
+            return (0, 0);
         }
         
         let ((mut score, next_player), mut mov) = (init_score.get(&player).unwrap(), -1);
@@ -425,28 +430,38 @@ impl Board {
 
             if player == self.player_1.clone() {
 
-                if score != max(score.clone(), m_score) {
-                    score = m_score.clone();
-                    mov = m.clone();
-                }
+                //if score != max(score.clone(), m_score) {
+                    //score = m_score.clone();
+                    //mov = m.clone();
+                //}
+                score = max(score.clone(), m_score);
                 if beta <= score {
                     self.undo_move(m.clone());
                     return (score.clone(), mov);
                 }
-                alpha = max(alpha.clone(), score.clone());
+                //alpha = max(alpha.clone(), score.clone());
+                if score > alpha {
+                    alpha = score.clone();
+                    mov = m.clone();
+                }
             }
 
             if player == self.player_2.clone() {
 
-                if score != min(score, m_score) {
-                    score = m_score.clone();
-                    mov = m.clone();
-                }
+                //if score != min(score, m_score) {
+                    //score = m_score.clone();
+                    //mov = m.clone();
+                //}
+                score = min(score.clone(), m_score);
                 if alpha >= score {
                     self.undo_move(m.clone());
                     return (score.clone(), mov);
                 }
-                beta = min(beta.clone(), score.clone());
+                //beta = min(beta.clone(), score.clone());
+                if score < beta {
+                    beta = score.clone();
+                    mov = m.clone();
+                }
             }
 
             self.undo_move(m.clone());
