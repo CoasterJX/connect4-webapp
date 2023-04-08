@@ -19,7 +19,6 @@ use repository::hist_repo::HistRepo;
 use repository::{
     user_repo::UserRepo,
     board_repo::BoardRepo,
-    db_type::*
 };
 
 use rocket::{
@@ -71,63 +70,138 @@ fn rocket() -> _ {
             loop {
                 welcome();
                 // Initialize the variables that are needed //
-                let mut player_1: String = String::new();
-                let mut player_2: String = String::new();
-                let mut mode: Vec<bool> = vec![];
-                let mut difficulty: i64 = i64::from(1);
-                let mut width: i64 = i64::from(1);
-                let mut height: i64 = i64::from(1);
+                let mut player_1: String;
+                let mut player_2: String;
+                let mode: Vec<bool>;
+                let difficulty: i64;
+                let width: i64;
+                let height: i64;
 
                 // Get who is player 1 //
-                println!("Enter player 1 (Press ENTER as computer): ");
-                io::stdout().flush().unwrap();
-                let _ = io::stdin().read_line(&mut player_1).unwrap();
-                player_1 = player_1.trim().to_string();
+                loop {
+                    player_1 = String::new();
+                    println!("Enter player 1 (Press ENTER as computer): ");
+                    io::stdout().flush().unwrap();
+                    let _ = io::stdin().read_line(&mut player_1).unwrap();
+                    player_1 = player_1.trim().to_string();
+                    if player_1 == "*" || player_1 == "**" {
+                        println!("You cannot use that name. Please choose another name.");
+                    } else {
+                        break;
+                    }
+                }
+                
 
                 // Get who is player 2 //
-                println!("Enter player 2 (Press ENTER as computer): ");
-                io::stdout().flush().unwrap();
-                let _ = io::stdin().read_line(&mut player_2).unwrap();
-                player_2 = player_2.trim().to_string();
-                if player_1 == "" {
-                    player_2 = "*".to_string();
+                loop {
+                    player_2 = String::new();
+                    println!("Enter player 2 (Press ENTER as computer): ");
+                    io::stdout().flush().unwrap();
+                    let _ = io::stdin().read_line(&mut player_2).unwrap();
+                    player_2 = player_2.trim().to_string();
+                    if player_2 == "*" || player_2 == "**" {
+                        println!("You cannot use those names. Please choose another name.");
+                        continue;
+                    }
+                    if player_1 == "" {
+                        player_2 = "*".to_string();
+                    }
+                    break;
                 }
 
                 // Get the game mode //
-                println!("Enter the game mode: ");
-                let mut input: String = String::new();
-                io::stdout().flush().unwrap();
-                let _ = io::stdin().read_line(&mut input).unwrap();
-                input = input.trim().to_string();
-                mode = input.chars().map(|c| {
-                    match c {
-                        'T' => false,
-                        'O' => true,
-                        _ => false
+                loop {
+                    println!("Enter the game mode: ");
+                    let mut input: String = String::new();
+                    io::stdout().flush().unwrap();
+                    let _ = io::stdin().read_line(&mut input).unwrap();
+                    input = input.trim().to_string();
+                    if input.len() != 4 {
+                        println!("Input must contain exactly four characters.");
+                        continue;
                     }
-                })
-                .collect();
+                    if !input.chars().all(|c| {
+                        c == 'T' || c == 'O'
+                    }) {
+                        println!("Your input must contain either the characters T or O.");
+                        continue;
+                    }
+                    mode = input.chars().map(|c| {
+                        match c {
+                            'T' => false,
+                            'O' => true,
+                            _ => false
+                        }
+                    })
+                    .collect();
+                    break;
+                }
 
                 // Get the difficulty //
-                println!("Enter the difficulty level: ");
-                let mut input: String = String::new();
-                io::stdout().flush().unwrap();
-                let _ = io::stdin().read_line(&mut input).unwrap();
-                difficulty = input.trim().parse().unwrap();
+                loop {
+                    println!("Enter the difficulty level: ");
+                    let mut input: String = String::new();
+                    io::stdout().flush().unwrap();
+                    let _ = io::stdin().read_line(&mut input).unwrap();
+                    match input.trim().parse() {
+                        Ok(i) => {
+                            if i < 0 {
+                                println!("The difficulty must be at least 0.");
+                                continue;
+                            }
+                            difficulty = i;
+                            break;
+                        },
+                        Err(_) => {
+                            println!("Your input is invalid. Please try again.");
+                            continue;
+                        }
+                    }
+                }
 
                 // Get the width of the board //
-                println!("Enter the width of the board: ");
-                let mut input: String = String::new();
-                io::stdout().flush().unwrap();
-                let _ = io::stdin().read_line(&mut input).unwrap();
-                width = input.trim().parse().unwrap();
+                loop {
+                    println!("Enter the width of the board: ");
+                    let mut input: String = String::new();
+                    io::stdout().flush().unwrap();
+                    let _ = io::stdin().read_line(&mut input).unwrap();
+                    match input.trim().parse() {
+                        Ok(i) => {
+                            if i < 1 {
+                                println!("The width of the board must be greater than 0.");
+                                continue;
+                            }
+                            width = i;
+                            break;
+                        },
+                        Err(_) => {
+                            println!("Your input is invalid. Please try again.");
+                            continue;
+                        }
+                    }
+                }
 
                 // Get the height of the board //
-                println!("Enter the height of the board: ");
-                let mut input: String = String::new();
-                io::stdout().flush().unwrap();
-                let _ = io::stdin().read_line(&mut input).unwrap();
-                height = input.trim().parse().unwrap();
+                loop {
+                    println!("Enter the height of the board: ");
+                    let mut input: String = String::new();
+                    io::stdout().flush().unwrap();
+                    let _ = io::stdin().read_line(&mut input).unwrap();
+                    match input.trim().parse() {
+                        Ok(i) => {
+                            if i < 1 {
+                                println!("The height of the board must be greater than 0.");
+                                continue;
+                            }
+                            height = i;
+                            break;
+                        },
+                        Err(_) => {
+                            println!("Your input is invalid. Please try again.");
+                            continue;
+                        }
+                    }
+                }
 
                 let db: BoardRepo = BoardRepo::init();
                 let mut game_board: Board = match db.get_board(&Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone())) {
