@@ -65,7 +65,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         human_move.clone(),
                         (-1, -1),
                         winner.clone(),
-                        b.last_player.clone()
+                        b.last_player.clone(),
+                        &b.clone()
                     )));
                 },
                 (false, _) => ()
@@ -81,7 +82,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         human_move.clone(),
                         (-1, -1),
                         DRAW_STR.to_owned(),
-                        b.last_player.clone()
+                        b.last_player.clone(),
+                        &b.clone()
                     )));
                 },
                 false => (),
@@ -118,7 +120,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         human_move.clone(),
                         cmput_move.clone(),
                         winner.clone(),
-                        b.last_player.clone()
+                        b.last_player.clone(),
+                        &b.clone()
                     )))
                 },
                 (false, _) => ()
@@ -134,7 +137,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         human_move.clone(),
                         cmput_move.clone(),
                         DRAW_STR.to_owned(),
-                        b.last_player.clone()
+                        b.last_player.clone(),
+                        &b.clone()
                     )))
                 },
                 false => (),
@@ -148,14 +152,16 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                     human_move.clone(),
                     cmput_move.clone(),
                     "".to_owned(),
-                    b.last_player.clone()
+                    b.last_player.clone(),
+                    &b.clone()
                 ))),
                 false => return Ok(Json(PerformMoveResponse::new(
                     (false, "Database not connected."),
                     human_move.clone(),
                     cmput_move.clone(),
                     "".to_owned(),
-                    b.last_player.clone()
+                    b.last_player.clone(),
+                    &b.clone()
                 ))),
             }
         },
@@ -166,7 +172,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             (-1, -1),
             (-1, -1),
             "".to_owned(),
-            "".to_owned()
+            "".to_owned(),
+            &Board::empty()
         ))),
     }
 }

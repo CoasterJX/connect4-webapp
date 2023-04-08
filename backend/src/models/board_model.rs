@@ -498,7 +498,7 @@ pub struct PerformMoveRequest {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PerformMoveResponse {
     pub status: GeneralStatus,
-    pub player: String,
+    pub player: bool,
     pub human_row: i64,
     pub human_col: i64,
     pub cmput_row: i64,
@@ -508,7 +508,7 @@ pub struct PerformMoveResponse {
 
 impl PerformMoveResponse {
 
-    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), winner: String, player: String) -> Self {
+    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), winner: String, player: String, board: &Board) -> Self {
 
         let s = if status.0 {
             GeneralStatus::success()
@@ -516,7 +516,7 @@ impl PerformMoveResponse {
 
         Self {
             status: s,
-            player,
+            player: player.eq(&board.player_2),
             human_row: human_move.0,
             human_col: human_move.1,
             cmput_row: cmput_move.0,
@@ -536,4 +536,10 @@ pub struct GeneralBoardResponse {
 pub struct GetAllBoardResponse {
     pub status: GeneralStatus,
     pub all_boards: Vec<Board>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetHistResponse {
+    pub status: GeneralStatus,
+    pub hist: Vec<Board>,
 }
