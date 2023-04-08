@@ -42,6 +42,13 @@ pub struct Board {
 }
 
 impl Board {
+
+    pub fn opponent(&self, player: &String) -> String {
+        if player.eq(&self.player_1) {
+            self.player_2.clone()
+        } else { self.player_1.clone() }
+    }
+
     pub fn print(&self) -> String {
         // Start with the empty string
         let mut board_str = String::new();

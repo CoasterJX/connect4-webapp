@@ -81,4 +81,33 @@ impl UserRepo {
             None => false,
         }
     }
+
+    // add score to user
+    pub fn add_score(&self, name: &String, delta: i64) -> bool {
+
+        if name.eq("*") { return true;}
+
+        let mut new_score = match self.get_user(name) {
+            Some(user) => user.score.clone(),
+            None => return false,
+        };
+        new_score += delta;
+
+        let filter = doc! {
+            "name": name.clone()
+        };
+        let update = doc! {
+            "$set": {
+                "score": new_score
+            }
+        };
+        let res = self.col
+            .update_one(filter, update, None)
+            .ok();
+
+        match res {
+            Some(_) => true,
+            None => false,
+        }
+    }
 }

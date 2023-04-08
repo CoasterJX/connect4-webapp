@@ -3,7 +3,7 @@ use crate::{
         board_model::*,
         general_model::GeneralStatus
     },
-    repository::{board_repo::BoardRepo, hist_repo::HistRepo}
+    repository::{board_repo::BoardRepo, hist_repo::HistRepo, user_repo::UserRepo}
 };
 
 use rocket::{
@@ -47,6 +47,24 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
         
         // there is a matched active board in database
         Some(mut b) => {
+
+            // give up case
+            if col == -1 {
+                let winner = b.last_player.clone();
+                HistRepo::init().push_hist(&b, &winner);
+                UserRepo::init().add_score(&winner, b.difficulty.clone());
+                UserRepo::init().add_score(&b.opponent(&winner), -b.difficulty.clone()*10);
+
+                return Ok(Json(PerformMoveResponse::new(
+                    (true, ""),
+                    (-1, -1),
+                    (-1, -1),
+                    winner.clone(),
+                    b.last_player.clone(),
+                    &b.clone()
+                )));
+            }
+
             if b.allows_move(&col) {
                 let next_player = b.get_next_player();
                 b.perform_move(col.clone(), next_player.clone());
@@ -59,6 +77,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
 
                     db.delete_board(&b);
                     HistRepo::init().push_hist(&b, &winner);
+                    UserRepo::init().add_score(&winner, b.difficulty.clone());
+                    UserRepo::init().add_score(&b.opponent(&winner), -b.difficulty.clone());
 
                     return Ok(Json(PerformMoveResponse::new(
                         (true, ""),
@@ -114,6 +134,8 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
 
                     db.delete_board(&b);
                     HistRepo::init().push_hist(&b, &winner);
+                    UserRepo::init().add_score(&winner, b.difficulty.clone());
+                    UserRepo::init().add_score(&b.opponent(&winner), -b.difficulty.clone());
 
                     return Ok(Json(PerformMoveResponse::new(
                         (true, ""),
