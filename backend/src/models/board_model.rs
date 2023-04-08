@@ -1,4 +1,4 @@
-use std::{cmp::{max, min}, collections::HashMap};
+use std::{cmp::{max, min, Ordering}, collections::HashMap};
 
 use serde::{Serialize, Deserialize};
 use rand::seq::SliceRandom;
@@ -541,5 +541,5 @@ pub struct GetAllBoardResponse {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetHistResponse {
     pub status: GeneralStatus,
-    pub hist: Vec<Board>,
+    pub hist: Vec<HistBoard>,
 }

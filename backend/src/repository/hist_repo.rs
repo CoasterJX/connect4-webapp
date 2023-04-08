@@ -46,4 +46,37 @@ impl HistRepo {
     }
 
     // get hist by user, * represents all
+    pub fn get_hist(&self, user: &String, side: &str) -> Option<Vec<HistBoard>> {
+
+        match user.clone().as_str() {
+            "*" => {
+
+                if side == "player_2" {
+                    return None;
+                }
+
+                let cursors = self.col
+                    .find(None, None)
+                    .ok();
+
+                match cursors {
+                    Some(c) => Some(c.map(|doc| doc.unwrap()).collect()),
+                    None => None,
+                }
+            },
+            _ => {
+                let filter = doc! {
+                    format!("board.{}", side.clone()).as_str(): user.clone()
+                };
+                let cursors = self.col
+                    .find(filter, None)
+                    .ok();
+
+                match cursors {
+                    Some(c) => Some(c.map(|doc| doc.unwrap()).collect()),
+                    None => None,
+                }
+            },
+        }
+    }
 }
