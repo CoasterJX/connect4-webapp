@@ -6,7 +6,7 @@ use rand::seq::SliceRandom;
 use super::general_model::GeneralStatus;
 
 use std::io;
-use std::io::Write;
+//use std::io::Write;
 use chrono::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -498,6 +498,7 @@ pub struct PerformMoveRequest {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PerformMoveResponse {
     pub status: GeneralStatus,
+    pub player: String,
     pub human_row: i64,
     pub human_col: i64,
     pub cmput_row: i64,
@@ -507,7 +508,7 @@ pub struct PerformMoveResponse {
 
 impl PerformMoveResponse {
 
-    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), winner: String) -> Self {
+    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), winner: String, player: String) -> Self {
 
         let s = if status.0 {
             GeneralStatus::success()
@@ -515,6 +516,7 @@ impl PerformMoveResponse {
 
         Self {
             status: s,
+            player,
             human_row: human_move.0,
             human_col: human_move.1,
             cmput_row: cmput_move.0,
