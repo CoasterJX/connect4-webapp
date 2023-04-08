@@ -313,8 +313,8 @@ impl Board {
     Input a player's checker piece and get a move for them.
      */
     pub fn get_player_move(&self, ox: String) -> i64 {
-        let mut input: String = String::new();
         loop {
+            let mut input: String = String::new();
             println!("{}'s choice: ", ox);
             let _ = io::stdin().read_line(&mut input).unwrap();
             match input.trim().parse() {
@@ -348,11 +348,11 @@ impl Board {
     /*
     Hosts a game which can be played between two players.
      */
-    pub fn host_game(&mut self) {
+    pub fn host_game(&mut self) -> String {
         println!("Welcome!");
-        let mut game_over: bool = false;
+        // let mut game_over: bool = false;
         let mut ox: String = self.player_1.clone();
-        while !game_over {
+        loop {
             println!("{}", self.print());
             if ox == "" || ox == "*" {
                 let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), i64::MIN, i64::MAX, self.difficulty);
@@ -371,7 +371,10 @@ impl Board {
                 self.perform_move(col_move, ox.clone());
             }
             if self.has_winner() {
-                game_over = true;
+                return ox;
+            }
+            if self.is_draw() {
+                return "**".to_string();
             }
             if ox == self.player_1 {
                 ox = self.player_2.clone();
@@ -379,7 +382,6 @@ impl Board {
                 ox = self.player_1.clone();
             }
         }
-        self.print_congrats();
     }
 
     /*
