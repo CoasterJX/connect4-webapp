@@ -51,6 +51,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             // give up case
             if col == -1 {
                 let winner = b.last_player.clone();
+                db.delete_board(&b);
                 HistRepo::init().push_hist(&b, &winner);
                 UserRepo::init().add_score(&winner, b.difficulty.clone());
                 UserRepo::init().add_score(&b.opponent(&winner), -b.difficulty.clone()*10);
