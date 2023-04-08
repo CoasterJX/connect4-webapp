@@ -44,4 +44,6 @@ impl HistRepo {
             None => false,
         }
     }
+
+    // get hist by user, * represents all
 }
