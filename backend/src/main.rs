@@ -126,6 +126,11 @@ fn rocket() -> _ {
                         println!("Your input must contain either the characters T or O.");
                         continue;
                     }
+                    if input.chars().nth(0) == input.chars().nth(3) && input.chars().nth(1) == input.chars().nth(2) {
+                    } else {
+                        println!("The gamemode must be symmetric. Please try again.");
+                        continue;
+                    }
                     mode = input.chars().map(|c| {
                         match c {
                             'T' => false,
