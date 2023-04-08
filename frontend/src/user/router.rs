@@ -654,7 +654,7 @@ fn user_play_human() -> Html {
             } else {
                 let human_row = response["human_row"].clone().to_string();
                 let human_column = response["human_col"].clone().to_string();
-                if player == 1 {
+                if response["player"].as_bool().unwrap() == false {
                     let _ = document()
                         .get_element_by_id(
                             format!("{}-{}", human_row.clone(), human_column.clone()).as_str(),
@@ -663,8 +663,7 @@ fn user_play_human() -> Html {
                         .dyn_into::<HtmlImageElement>()
                         .unwrap()
                         .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
-                    player = 2;
-                } else if player == 2 {
+                } else {
                     let _ = document()
                         .get_element_by_id(
                             format!("{}-{}", human_row.clone(), human_column.clone()).as_str(),
@@ -673,7 +672,6 @@ fn user_play_human() -> Html {
                         .dyn_into::<HtmlImageElement>()
                         .unwrap()
                         .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
-                    player = 1;
                 }
 
                 if response["winner"].as_str().unwrap().to_owned().len() != 0 {
