@@ -67,72 +67,83 @@ fn rocket() -> _ {
     if args.len() > 1 {
         let cmd: &String = &args[1];
         if cmd == "debug" {
-            welcome();
+            loop {
+                welcome();
+                // Initialize the variables that are needed //
+                let mut player_1: String = String::new();
+                let mut player_2: String = String::new();
+                let mut mode: Vec<bool> = vec![];
+                let mut difficulty: i64 = i64::from(1);
+                let mut width: i64 = i64::from(1);
+                let mut height: i64 = i64::from(1);
 
-            // Initialize the variables that are needed //
-            let mut player_1: String = String::new();
-            let mut player_2: String = String::new();
-            let mut mode: Vec<bool> = vec![];
-            let mut difficulty: i64 = i64::from(1);
-            let mut width: i64 = i64::from(1);
-            let mut height: i64 = i64::from(1);
+                // Get who is player 1 //
+                println!("Enter player 1 (Press ENTER as computer): ");
+                io::stdout().flush().unwrap();
+                let _ = io::stdin().read_line(&mut player_1).unwrap();
+                player_1 = player_1.trim().to_string();
 
-            // Get who is player 1 //
-            println!("Enter player 1 (Press ENTER as computer): ");
-            io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut player_1).unwrap();
-            player_1 = player_1.trim().to_string();
-
-            // Get who is player 2 //
-            println!("Enter player 2 (Press ENTER as computer): ");
-            io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut player_2).unwrap();
-            player_2 = player_2.trim().to_string();
-            if player_1 == "" {
-                player_2 = "*".to_string();
-            }
-
-            // Get the game mode //
-            println!("Enter the game mode: ");
-            let mut input: String = String::new();
-            io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut input).unwrap();
-            input = input.trim().to_string();
-            mode = input.chars().map(|c| {
-                match c {
-                    'T' => false,
-                    'O' => true,
-                    _ => false
+                // Get who is player 2 //
+                println!("Enter player 2 (Press ENTER as computer): ");
+                io::stdout().flush().unwrap();
+                let _ = io::stdin().read_line(&mut player_2).unwrap();
+                player_2 = player_2.trim().to_string();
+                if player_1 == "" {
+                    player_2 = "*".to_string();
                 }
-            })
-            .collect();
 
-            // Get the difficulty //
-            println!("Enter the difficulty level: ");
-            let mut input: String = String::new();
-            io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut input).unwrap();
-            difficulty = input.trim().parse().unwrap();
+                // Get the game mode //
+                println!("Enter the game mode: ");
+                let mut input: String = String::new();
+                io::stdout().flush().unwrap();
+                let _ = io::stdin().read_line(&mut input).unwrap();
+                input = input.trim().to_string();
+                mode = input.chars().map(|c| {
+                    match c {
+                        'T' => false,
+                        'O' => true,
+                        _ => false
+                    }
+                })
+                .collect();
 
-            // Get the width of the board //
-            println!("Enter the width of the board: ");
-            let mut input: String = String::new();
-            io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut input).unwrap();
-            width = input.trim().parse().unwrap();
+                // Get the difficulty //
+                println!("Enter the difficulty level: ");
+                let mut input: String = String::new();
+                io::stdout().flush().unwrap();
+                let _ = io::stdin().read_line(&mut input).unwrap();
+                difficulty = input.trim().parse().unwrap();
 
-            // Get the height of the board //
-            println!("Enter the height of the board: ");
-            let mut input: String = String::new();
-            io::stdout().flush().unwrap();
-            let _ = io::stdin().read_line(&mut input).unwrap();
-            height = input.trim().parse().unwrap();
-            let db: BoardRepo = BoardRepo::init();
-            let mut game_board: Board = match db.get_board(&Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone())) {
-                Some(board) => board,
-                None => Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone()),
-            };
-            game_board.host_game();
+                // Get the width of the board //
+                println!("Enter the width of the board: ");
+                let mut input: String = String::new();
+                io::stdout().flush().unwrap();
+                let _ = io::stdin().read_line(&mut input).unwrap();
+                width = input.trim().parse().unwrap();
+
+                // Get the height of the board //
+                println!("Enter the height of the board: ");
+                let mut input: String = String::new();
+                io::stdout().flush().unwrap();
+                let _ = io::stdin().read_line(&mut input).unwrap();
+                height = input.trim().parse().unwrap();
+
+                let db: BoardRepo = BoardRepo::init();
+                let mut game_board: Board = match db.get_board(&Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone())) {
+                    Some(board) => board,
+                    None => Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone()),
+                };
+                let winner: String = game_board.host_game();
+                if player_2 == "*" {
+                    if winner == "" {
+                        println!("Computer 1 wins -- Congratulations!");
+                    } else {
+                        println!("Computer 2 wins -- Congratulations!");
+                    }
+                } else {
+                    game_board.print_congrats();
+                }
+            }
         } else {
             println!("Environment variable not recognized. Launching backend instead.")
         }
