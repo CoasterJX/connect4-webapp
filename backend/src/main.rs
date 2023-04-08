@@ -11,6 +11,7 @@ use std::io;
 use std::io::Write;
 
 use api::board_api::*;
+use api::hist_api::get_hist;
 use api::user_api::*;
 use models::board_model::Board;
 
@@ -166,4 +167,5 @@ fn rocket() -> _ {
         .mount("/", routes![get_board])
         .mount("/", routes![get_all_boards])
         .mount("/", routes![perform_move])
+        .mount("/", routes![get_hist])
 }
