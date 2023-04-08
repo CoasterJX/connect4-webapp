@@ -17,12 +17,6 @@ use yew_router::{navigator, prelude::*};
 
 #[derive(Clone, Routable, PartialEq)]
 enum UserRoute {
-    #[at("/user")]
-    UserHome,
-
-    #[at("/user/login")]
-    UserLogin,
-
     #[at("/user/register")]
     UserRegister,
 
@@ -38,108 +32,43 @@ enum UserRoute {
     #[at("/user/guide-TOOT")]
     UserGuideTOOT,
 
-    #[at("/user/play-computer-TOOT")]
-    UserPlayComputerTOOT,
-
-    #[at("/user/play-human-TOOT")]
-    UserPlayHumanTOOT,
-
     #[at("/user/history")]
     UserGameHistory,
 
     #[at("/user/scoreboard")]
     UserScoreBoard,
-
-    #[at("/user/settings")]
-    UserSettings,
 }
 
-#[function_component(UserHome)]
-fn user_home() -> Html {
-    let navigator = use_navigator().unwrap();
-    let (login_nav, register_nav) = (navigator.clone(), navigator.clone());
-
-    let login_onclick = Callback::from(move |_| login_nav.push(&UserRoute::UserLogin));
-    let register_onclick = Callback::from(move |_| register_nav.push(&UserRoute::UserRegister));
-
-    html! {
-        <div class="sidenavpadding">
-            <div>
-                <h1>{ "Login/Register" }</h1>
-                <button onclick={login_onclick}>{ "Login" }</button>
-                <button onclick={register_onclick}>{ "Register" }</button>
-            </div>
-        </div>
-    }
+fn get_input_value(element: &str) -> String {
+    return document()
+        .get_element_by_id(element)
+        .unwrap()
+        .dyn_into::<HtmlInputElement>()
+        .unwrap()
+        .value();
 }
 
-#[function_component(UserLogin)]
-fn user_login() -> Html {
-    let navigator = use_navigator().unwrap();
+fn set_heading_message(element: &str, message: &str) {
+    let _ = document()
+        .get_element_by_id(element)
+        .unwrap()
+        .dyn_into::<HtmlHeadingElement>()
+        .unwrap()
+        .set_inner_html(message);
+}
 
-    let login_nav = navigator.clone();
-    let login_onclick = Callback::from(move |_event: MouseEvent| {
-        let name_input = document()
-            .get_element_by_id("login-name")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let pwd_input = document()
-            .get_element_by_id("login-pwd")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
-        let get_user_uri = format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
-
-        wasm_bindgen_futures::spawn_local(async move {
-            let client = reqwest_wasm::Client::new();
-            let validity = client
-                .post(verify_user_uri)
-                .json(&json!({
-                    "name": name_input,
-                    "location": "",
-                    "title": "",
-                    "pwd": pwd_input
-                }))
-                .send()
-                .await
-                .unwrap()
-                .json::<serde_json::Value>()
-                .await
-                .unwrap();
-            if !validity["exists"].as_bool().unwrap() {
-                document()
-                    .get_element_by_id("login-err-msg")
-                    .unwrap()
-                    .dyn_into::<HtmlHeadingElement>()
-                    .unwrap()
-                    .set_inner_html("Login failed! Check your user name & password.");
-                //.set_node_value(Some("Login failed! Check your user name & password."));
-            } else {
-                let user = reqwest_wasm::get(get_user_uri)
-                    .await
-                    .unwrap()
-                    .json::<serde_json::Value>()
-                    .await
-                    .unwrap();
-            }
-        });
-    });
-
-    html! {
-        <div>
-            <h5>{ "Enter name & pwd aa:" }</h5>
-            <input id="login-name" placeholder="Name" /><br />
-            <input id="login-pwd" placeholder="Password" /><br />
-            <button class="dif" onclick={login_onclick}>{ "Login" }</button><br />
-            <h1 id="login-err-msg">{ "" }</h1>
-        </div>
+fn set_Div_display(element: &str, display: bool) {
+    let mut style = "";
+    match display {
+        true => style = "display: ",
+        false => style = "display: none",
     }
+    let _ = document()
+        .get_element_by_id(element)
+        .unwrap()
+        .dyn_into::<HtmlDivElement>()
+        .unwrap()
+        .set_attribute("style", style);
 }
 
 #[function_component(UserRegister)]
@@ -148,31 +77,16 @@ fn user_register() -> Html {
     let navigator = use_navigator().unwrap();
 
     let register_onclick = Callback::from(move |_event: MouseEvent| {
-        let name_input = document()
-            .get_element_by_id("register-name")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let pwd_input = document()
-            .get_element_by_id("register-pwd")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
+        let name_input = get_input_value("register-name");
+        let pwd_input = get_input_value("register-pwd");
 
         if name_input.contains("_") {
-            let _ = document()
-                .get_element_by_id("register-msg")
-                .unwrap()
-                .dyn_into::<HtmlHeadingElement>()
-                .unwrap()
-                .set_inner_html("Register failed! Do not include \"_\" in your username.");
+            set_heading_message(
+                "register-msg",
+                "Register failed! Do not include \"_\" in your username.",
+            );
         } else {
             let create_user_uri = format!("{}/user/create", BACKEND_URI);
-            let get_user_uri =
-                format!("{}/user/info/{}", BACKEND_URI, name_input.replace(" ", "_"));
 
             let registernav = navigator.clone();
 
@@ -198,22 +112,11 @@ fn user_register() -> Html {
                         .replace("\\", "")
                         .replace("\"", "");
 
-                    document()
-                        .get_element_by_id("register-msg")
-                        .unwrap()
-                        .dyn_into::<HtmlHeadingElement>()
-                        .unwrap()
-                        .set_inner_html(format!("Register failed! {}", errormessage).as_str());
-                    //.set_node_value(Some("Login failed! Check your user name & password."));
+                    set_heading_message(
+                        "register-msg",
+                        format!("Register failed! {}", errormessage).as_str(),
+                    );
                 } else {
-                    let _ = document()
-                        .get_element_by_id("register-msg")
-                        .unwrap()
-                        .dyn_into::<HtmlHeadingElement>()
-                        .unwrap()
-                        .set_inner_html("Register success!");
-
-                    let _ = sleep(Duration::new(5, 0));
                     registernav.push(&UserRoute::UserGuide);
                 }
             });
@@ -257,27 +160,14 @@ fn user_guide() -> Html {
 #[function_component(UserPlayComputer)]
 fn user_play_computer() -> Html {
     let login_onclick = Callback::from(move |_event: MouseEvent| {
-        let name_input = document()
-            .get_element_by_id("player-name")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let pwd_input = document()
-            .get_element_by_id("player-pwd")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
+        let name_input = get_input_value("player-name");
+        let pwd_input = get_input_value("player-pwd");
 
         if name_input.contains("_") {
-            let _ = document()
-                .get_element_by_id("login-msg")
-                .unwrap()
-                .dyn_into::<HtmlHeadingElement>()
-                .unwrap()
-                .set_inner_html("Login failed! Do not include \"_\" in your username.");
+            set_heading_message(
+                "login-msg",
+                "Login failed! Do not include \"_\" in your username.",
+            );
         } else {
             let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
 
@@ -298,74 +188,24 @@ fn user_play_computer() -> Html {
                     .unwrap();
 
                 if !response["exists"].as_bool().unwrap() {
-                    document()
-                        .get_element_by_id("login-msg")
-                        .unwrap()
-                        .dyn_into::<HtmlHeadingElement>()
-                        .unwrap()
-                        .set_inner_html("Login failed! User password combination does not exist!");
+                    set_heading_message(
+                        "login-msg",
+                        "Login failed! User password combination does not exist!",
+                    );
                 } else {
-                    let _ = document()
-                        .get_element_by_id("login-msg")
-                        .unwrap()
-                        .dyn_into::<HtmlHeadingElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: none");
-
-                    let _ = document()
-                        .get_element_by_id("dimension-prompt")
-                        .unwrap()
-                        .dyn_into::<HtmlDivElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: ");
-
-                    let _ = document()
-                        .get_element_by_id("difficulty-prompt")
-                        .unwrap()
-                        .dyn_into::<HtmlDivElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: ");
-
-                    let _ = document()
-                        .get_element_by_id("mode-prompt")
-                        .unwrap()
-                        .dyn_into::<HtmlDivElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: ");
-
-                    let _ = document()
-                        .get_element_by_id("login-prompt")
-                        .unwrap()
-                        .dyn_into::<HtmlDivElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: none");
+                    set_Div_display("dimension-prompt", true);
+                    set_Div_display("difficulty-prompt", true);
+                    set_Div_display("mode-prompt", true);
+                    set_Div_display("login-prompt", false);
                 }
             });
         }
     });
 
     let generateBoard = Callback::from(move |_event: MouseEvent| {
-        let width = document()
-            .get_element_by_id("board-width")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let height = document()
-            .get_element_by_id("board-height")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
-        let mode = document()
-            .get_element_by_id("board-mode")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
-
+        let width = get_input_value("board-width");
+        let height = get_input_value("board-height");
+        let mode = get_input_value("board-mode");
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
 
         let imgprefix = "<img ";
@@ -387,20 +227,6 @@ fn user_play_computer() -> Html {
             finalString += rowFinal;
         }
 
-        let _ = document()
-            .get_element_by_id("board")
-            .unwrap()
-            .dyn_into::<HtmlDivElement>()
-            .unwrap()
-            .set_inner_html((&finalString).as_str());
-
-        let _ = document()
-            .get_element_by_id("column-prompt")
-            .unwrap()
-            .dyn_into::<HtmlDivElement>()
-            .unwrap()
-            .set_attribute("style", "display: ");
-
         let create_board_uri = format!("{}/board/create", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
@@ -413,23 +239,13 @@ fn user_play_computer() -> Html {
                 "last_row": 0,
                 "last_col": 0,
                 "last_player": "",
-                "player_1": document()
-                            .get_element_by_id("player-name")
-                            .unwrap()
-                            .dyn_into::<HtmlInputElement>()
-                            .unwrap()
-                            .value(),
+                "player_1": get_input_value("player-name"),
                 "player_2": "*",
                 "mode": pattern,
-                "difficulty": document()
-                            .get_element_by_id("board-difficulty")
-                            .unwrap()
-                            .dyn_into::<HtmlInputElement>()
-                            .unwrap()
-                            .value()
+                "difficulty": get_input_value("board-difficulty")
                             .parse::<i64>()
                             .unwrap(),
-                        }))
+                    }))
                 .send()
                 .await
                 .unwrap()
@@ -440,91 +256,50 @@ fn user_play_computer() -> Html {
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Board generation failed");
             } else {
-                let _ = document()
-                    .get_element_by_id("dimension-prompt")
-                    .unwrap()
-                    .dyn_into::<HtmlDivElement>()
-                    .unwrap()
-                    .set_attribute("style", "display: none");
+                set_Div_display("dimension-prompt", false);
+                set_Div_display("difficulty-prompt", false);
+                set_Div_display("mode-prompt", false);
+                set_Div_display("column-prompt", true);
+                set_Div_display("giveup-button-prompt", true);
 
                 let _ = document()
-                    .get_element_by_id("difficulty-prompt")
+                    .get_element_by_id("board")
                     .unwrap()
                     .dyn_into::<HtmlDivElement>()
                     .unwrap()
-                    .set_attribute("style", "display: none");
-
-                let _ = document()
-                    .get_element_by_id("mode-prompt")
-                    .unwrap()
-                    .dyn_into::<HtmlDivElement>()
-                    .unwrap()
-                    .set_attribute("style", "display: none");
+                    .set_inner_html((&finalString).as_str());
             }
         });
     });
 
     let makeMove = Callback::from(move |_event: MouseEvent| {
-        let column = document()
-            .get_element_by_id("column-number")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value()
-            .parse::<i64>()
-            .unwrap()
-            - 1;
+        let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
 
-        let mode = document()
-            .get_element_by_id("board-mode")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .unwrap()
-            .value();
+        let mode = get_input_value("board-mode");
 
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
         // Make the move
-        let create_board_uri = format!("{}/board/move", BACKEND_URI);
+        let make_move_uri = format!("{}/board/move", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
-                .post(create_board_uri)
+                .post(make_move_uri)
                 .json(&json!({
                     "board_info": {
-                        "width": document()
-                                .get_element_by_id("board-width")
-                                .unwrap()
-                                .dyn_into::<HtmlInputElement>()
-                                .unwrap()
-                                .value()
+                        "width": get_input_value("board-width")
                                 .parse::<i64>()
                                 .unwrap(),
-                        "height": document()
-                                .get_element_by_id("board-height")
-                                .unwrap()
-                                .dyn_into::<HtmlInputElement>()
-                                .unwrap()
-                                .value()
+                        "height": get_input_value("board-height")
                                 .parse::<i64>()
                                 .unwrap(),
                         "board": [],
                         "last_row": 0,
                         "last_col": 0,
                         "last_player": "",
-                        "player_1": document()
-                                    .get_element_by_id("player-name")
-                                    .unwrap()
-                                    .dyn_into::<HtmlInputElement>()
-                                    .unwrap()
-                                    .value(),
+                        "player_1": get_input_value("player-name"),
                         "player_2": "*",
                         "mode": pattern,
-                        "difficulty": document()
-                                    .get_element_by_id("board-difficulty")
-                                    .unwrap()
-                                    .dyn_into::<HtmlInputElement>()
-                                    .unwrap()
-                                    .value()
+                        "difficulty": get_input_value("board-difficulty")
                                     .parse::<i64>()
                                     .unwrap()
                     },
@@ -579,27 +354,61 @@ fn user_play_computer() -> Html {
                         );
                     }
 
-                    document()
-                        .get_element_by_id("winner-msg")
-                        .unwrap()
-                        .dyn_into::<HtmlHeadingElement>()
-                        .unwrap()
-                        .set_inner_html(winner.as_str());
-
-                    let _ = document()
-                        .get_element_by_id("restart-button-prompt")
-                        .unwrap()
-                        .dyn_into::<HtmlDivElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: ");
-
-                    let _ = document()
-                        .get_element_by_id("column-prompt")
-                        .unwrap()
-                        .dyn_into::<HtmlDivElement>()
-                        .unwrap()
-                        .set_attribute("style", "display: none");
+                    set_heading_message("winner-msg", winner.as_str());
+                    set_Div_display("restart-button-prompt", true);
+                    set_Div_display("column-prompt", false);
+                    set_Div_display("giveup-button-prompt", false);
                 }
+            }
+        });
+    });
+
+    let giveup = Callback::from(move |_event: MouseEvent| {
+        let giveup_board_uri = format!("{}/board/move", BACKEND_URI);
+        let mode = get_input_value("board-mode");
+
+        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            let response = client
+                .post(giveup_board_uri)
+                .json(&json!({
+                    "board_info": {
+                        "width": get_input_value("board-width")
+                                .parse::<i64>()
+                                .unwrap(),
+                        "height": get_input_value("board-height")
+                                .parse::<i64>()
+                                .unwrap(),
+                        "board": [],
+                        "last_row": 0,
+                        "last_col": 0,
+                        "last_player": "",
+                        "player_1": get_input_value("player-name"),
+                        "player_2": "*",
+                        "mode": pattern,
+                        "difficulty": get_input_value("board-difficulty")
+                                    .parse::<i64>()
+                                    .unwrap()
+                    },
+                        "col": -1}))
+                .send()
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap();
+
+            log!("{:#?}", response["winner"].to_string());
+
+            if !response["status"]["success"].as_bool().unwrap() {
+                log!("Make move failed");
+            } else {
+                set_heading_message("winner-msg", "Computer won the game!");
+                set_Div_display("restart-button-prompt", true);
+                set_Div_display("column-prompt", false);
+                set_Div_display("giveup-button-prompt", false);
             }
         });
     });
@@ -611,12 +420,11 @@ fn user_play_computer() -> Html {
                     <h5 style="padding-top: 72px">{"Enter your name"}</h5>
                     <div class="flex-container">
                         <input id="player-name" placeholder="Your name" style="margin-left: 0px" readonly=false/>
-                        <input id="player-pwd" placeholder="Password" style="margin-left: 0px" type = "password" readonly=false/>
+                        <input id="player-pwd" placeholder="Password" type = "password" readonly=false/>
                         <button class="button" onclick={login_onclick}>{ "Start game" }</button>
                     </div>
+                    <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
-
-                <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
 
                 <div class="flex-container">
                     <div id="dimension-prompt" style="display: none">
@@ -658,6 +466,10 @@ fn user_play_computer() -> Html {
 
             <h5 id="winner-msg" style="color: green; font-weight: normal">{ "" }</h5>
 
+            <div id = "giveup-button-prompt"  style="display: none">
+                <button id = "giveup-button" style="margin-left: 0px" class="button" onclick={giveup}>{ "Giveup" }</button>
+            </div><br/>
+
             <div id = "board">
                 // Board goes here
             </div><br/>
@@ -667,16 +479,335 @@ fn user_play_computer() -> Html {
 
 #[function_component(UserPlayHuman)]
 fn user_play_human() -> Html {
+    let mut player = 1;
+
+    let login_onclick = Callback::from(move |_event: MouseEvent| {
+        let name_input1 = get_input_value("player-name1");
+        let pwd_input1 = get_input_value("player-pwd1");
+        let name_input2 = get_input_value("player-name2");
+        let pwd_input2 = get_input_value("player-pwd2");
+
+        if name_input1.contains("_") || name_input2.contains("_") {
+            set_heading_message(
+                "login-msg",
+                "Login failed! Do not include \"_\" in your username.",
+            );
+        } else {
+            let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let client = reqwest_wasm::Client::new();
+                let response1 = client
+                    .post(verify_user_uri.clone())
+                    .json(&json!({
+                        "name": name_input1,
+                        "pwd": pwd_input1,
+                        "score": 1
+                    }))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json::<serde_json::Value>()
+                    .await
+                    .unwrap();
+
+                let response2 = client
+                    .post(verify_user_uri)
+                    .json(&json!({
+                        "name": name_input2,
+                        "pwd": pwd_input2,
+                        "score": 1
+                    }))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json::<serde_json::Value>()
+                    .await
+                    .unwrap();
+
+                if !response1["exists"].as_bool().unwrap()
+                    || !response2["exists"].as_bool().unwrap()
+                {
+                    set_heading_message(
+                        "login-msg",
+                        "Login failed! User password combination does not exist!",
+                    );
+                } else {
+                    set_Div_display("dimension-prompt", true);
+                    set_Div_display("difficulty-prompt", true);
+                    set_Div_display("mode-prompt", true);
+                    set_Div_display("login-prompt", false);
+                }
+            });
+        }
+    });
+
+    let generateBoard = Callback::from(move |_event: MouseEvent| {
+        let width = get_input_value("board-width");
+        let height = get_input_value("board-height");
+        let mode = get_input_value("board-mode");
+        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+
+        let imgprefix = "<img ";
+        let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
+
+        let mut finalString = String::from("");
+
+        for j in 0..height.parse().unwrap() {
+            let flexprefix = "<div class=\"flex-container\">";
+            let flexsuffix = "</div>";
+            let mut row = String::from("");
+            let mut bundle = String::from("");
+            for i in 0..width.parse().unwrap() {
+                let id = format!("id = \"{}-{}\"", j, i);
+                row += format!("{}{}{}", imgprefix, id, imgsuffix).as_str();
+            }
+            bundle = format!("{}{}{}", flexprefix, row, flexsuffix);
+            let rowFinal = bundle.as_str();
+            finalString += rowFinal;
+        }
+
+        let create_board_uri = format!("{}/board/create", BACKEND_URI);
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            let response = client
+                .post(create_board_uri)
+                .json(&json!({
+                    "width": width.parse::<i64>().unwrap(),
+                    "height": height.parse::<i64>().unwrap(),
+                    "board": [],
+                    "last_row": 0,
+                    "last_col": 0,
+                    "last_player": "",
+                    "player_1": get_input_value("player-name1"),
+                    "player_2": get_input_value("player-name2"),
+                    "mode": pattern,
+                    "difficulty": 1,
+                }))
+                .send()
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap();
+
+            if !response["status"]["success"].as_bool().unwrap() {
+                log!("Board generation failed");
+            } else {
+                set_Div_display("dimension-prompt", false);
+                set_Div_display("difficulty-prompt", false);
+                set_Div_display("mode-prompt", false);
+                set_Div_display("column-prompt", true);
+                set_Div_display("giveup-button-prompt", true);
+
+                let _ = document()
+                    .get_element_by_id("board")
+                    .unwrap()
+                    .dyn_into::<HtmlDivElement>()
+                    .unwrap()
+                    .set_inner_html((&finalString).as_str());
+            }
+        });
+    });
+
+    let makeMove = Callback::from(move |_event: MouseEvent| {
+        let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
+
+        let mode = get_input_value("board-mode");
+
+        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+        // Make the move
+        let make_move_uri = format!("{}/board/move", BACKEND_URI);
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            let response = client
+                .post(make_move_uri)
+                .json(&json!({
+                    "board_info": {
+                        "width": get_input_value("board-width")
+                                .parse::<i64>()
+                                .unwrap(),
+                        "height": get_input_value("board-height")
+                                .parse::<i64>()
+                                .unwrap(),
+                        "board": [],
+                        "last_row": 0,
+                        "last_col": 0,
+                        "last_player": "",
+                        "player_1": get_input_value("player-name1"),
+                        "player_2": get_input_value("player-name2"),
+                        "mode": pattern,
+                        "difficulty": 1
+                    },
+                        "col": column}))
+                .send()
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap();
+
+            log!("{:#?}", response["winner"].to_string());
+
+            if !response["status"]["success"].as_bool().unwrap() {
+                log!("Make move failed");
+            } else {
+                let human_row = response["human_row"].clone().to_string();
+                let human_column = response["human_col"].clone().to_string();
+                if player == 1 {
+                    let _ = document()
+                        .get_element_by_id(
+                            format!("{}-{}", human_row.clone(), human_column.clone()).as_str(),
+                        )
+                        .unwrap()
+                        .dyn_into::<HtmlImageElement>()
+                        .unwrap()
+                        .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
+                    player = 2;
+                } else if player == 2 {
+                    let _ = document()
+                        .get_element_by_id(
+                            format!("{}-{}", human_row.clone(), human_column.clone()).as_str(),
+                        )
+                        .unwrap()
+                        .dyn_into::<HtmlImageElement>()
+                        .unwrap()
+                        .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                    player = 1;
+                }
+
+                if response["winner"].as_str().unwrap().to_owned().len() != 0 {
+                    let mut winner = String::new();
+                    if response["winner"].as_str().unwrap().to_owned() == "*".to_owned() {
+                        winner = "Computer won the game!".to_owned();
+                    } else if response["winner"].as_str().unwrap().to_owned() == "^".to_owned() {
+                        winner = "Draw".to_owned();
+                    } else {
+                        winner = format!(
+                            "{} won the game!",
+                            response["winner"].as_str().unwrap().to_owned().clone()
+                        );
+                    }
+
+                    set_heading_message("winner-msg", winner.as_str());
+                    set_Div_display("restart-button-prompt", true);
+                    set_Div_display("column-prompt", false);
+                    set_Div_display("giveup-button-prompt", false);
+                }
+            }
+        });
+    });
+
+    let giveup = Callback::from(move |_event: MouseEvent| {
+        let giveup_board_uri = format!("{}/board/move", BACKEND_URI);
+        let mode = get_input_value("board-mode");
+
+        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            let response = client
+                .post(giveup_board_uri)
+                .json(&json!({
+                    "board_info": {
+                        "width": get_input_value("board-width")
+                                .parse::<i64>()
+                                .unwrap(),
+                        "height": get_input_value("board-height")
+                                .parse::<i64>()
+                                .unwrap(),
+                        "board": [],
+                        "last_row": 0,
+                        "last_col": 0,
+                        "last_player": "",
+                        "player_1": get_input_value("player-name1"),
+                        "player_2": get_input_value("player-name2"),
+                        "mode": pattern,
+                        "difficulty": 1
+                    },
+                        "col": -1}))
+                .send()
+                .await
+                .unwrap()
+                .json::<serde_json::Value>()
+                .await
+                .unwrap();
+
+            log!("{:#?}", response["winner"].to_string());
+
+            if !response["status"]["success"].as_bool().unwrap() {
+                log!("Make move failed");
+            } else {
+                set_heading_message("winner-msg", "Computer won the game!");
+                set_Div_display("restart-button-prompt", true);
+                set_Div_display("column-prompt", false);
+                set_Div_display("giveup-button-prompt", false);
+            }
+        });
+    });
+
     html! {
         <div class="sidenavpadding">
             <div>
-                <h5 style="padding-top: 72px">{"Enter players name"}</h5><br />
-                <div class="flex-container">
-                    <input id="player-name1" placeholder="Player 1's name" style="margin-left: 0px"/><br />
-                    <input id="player-name2" placeholder="Player 2's name"/><br />
-                    <button class="button">{ "Start game" }</button><br />
+                <div id="login-prompt">
+                    <h5 style="padding-top: 72px">{"Enter your name"}</h5>
+                    <div class="flex-container">
+                        <input id="player-name1" placeholder="Your name" style="margin-left: 0px" readonly=false/>
+                        <input id="player-pwd1" placeholder="Password" type = "password" readonly=false/>
+                        <input id="player-name2" placeholder="Your name" style="margin-left: 0px" readonly=false/>
+                        <input id="player-pwd2" placeholder="Password" type = "password" readonly=false/>
+                        <button class="button" onclick={login_onclick}>{ "Start game" }</button>
+                    </div>
+                    <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
+
+                <div class="flex-container">
+                    <div id="dimension-prompt" style="display: none">
+                        <h5 style="padding-top: 72px">{"Enter board dimensions"}</h5>
+                        <div class="flex-container">
+                            <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                            <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
+                        </div>
+                    </div>
+
+                    <div id="difficulty-prompt" style="display: none">
+                        <h5 style="padding-top: 72px">{"Enter difficulty"}</h5>
+                        <div class="flex-container">
+                            <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                        </div>
+                    </div>
+
+                    <div id="mode-prompt" style="display: none">
+                        <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
+                        <div class="flex-container">
+                            <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                            <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="column-prompt" style="display: none">
+                    <h5 style="padding-top: 72px">{"Enter column number to place a checker"}</h5>
+                    <div class="flex-container" >
+                        <input id="column-number" placeholder="Column number" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                        <button id = "column-button" class="button" onclick={makeMove}>{ "Confirm" }</button>
+                    </div>
+                </div>
+            </div><br />
+
+            <div id = "restart-button-prompt"  style="display: none">
+                <a href="/user/play-human">{"Restart"}</a>
             </div>
+
+            <h5 id="winner-msg" style="color: green; font-weight: normal">{ "" }</h5>
+
+            <div id = "giveup-button-prompt"  style="display: none">
+                <button id = "giveup-button" style="margin-left: 0px" class="button" onclick={giveup}>{ "Giveup" }</button>
+            </div><br/>
+
+            <div id = "board">
+                // Board goes here
+            </div><br/>
         </div>
     }
 }
@@ -696,37 +827,6 @@ fn user_guide_TOOT() -> Html {
                     <li>{"Try to spell TOOT or OTTO based on your winning combination, either horizontally or vertically or diagonally"}</li>
                 </ul><br /><br />
                 {"For More information on TOOT-OTTO click "} <a href="https://boardgamegeek.com/boardgame/19530/toot-and-otto">{"here"}</a>
-            </div>
-        </div>
-    }
-}
-
-#[function_component(UserPlayComputerTOOT)]
-fn user_play_computer_TOOT() -> Html {
-    html! {
-        <div class="sidenavpadding">
-            <div>
-                <h5 style="padding-top: 72px">{"Enter your name"}</h5><br />
-                <div class="flex-container">
-                    <input id="player-name" placeholder="Your name" style="margin-left: 0px"/><br />
-                    <button class="button">{ "Start game" }</button><br />
-                </div>
-            </div>
-        </div>
-    }
-}
-
-#[function_component(UserPlayHumanTOOT)]
-fn user_play_human_TOOT() -> Html {
-    html! {
-        <div class="sidenavpadding">
-            <div>
-                <h5 style="padding-top: 72px">{"Enter players name"}</h5><br />
-                <div class="flex-container">
-                    <input id="player-name1" placeholder="Player 1's name" style="margin-left: 0px"/><br />
-                    <input id="player-name2" placeholder="Player 2's name"/><br />
-                    <button class="button">{ "Start game" }</button><br />
-                </div>
             </div>
         </div>
     }
@@ -756,25 +856,6 @@ fn user_game_history() -> Html {
     }
 }
 
-#[function_component(UserSettings)]
-fn user_settings() -> Html {
-    let protanopia_onclick = Callback::from(move |_event: MouseEvent| {});
-
-    html! {
-        <div class="sidenavpadding">
-            <div>
-                <h5 style="padding-top: 72px">{"Color bind"}</h5><br />
-                <div class="flex-container">
-                    <button class="button" style="margin-left: 0px">{ "Normal" }</button><br />
-                    <button class="button" onclick={protanopia_onclick}>{ "Protanopia" }</button><br />
-                    <button class="button">{ "Deuteranopia" }</button><br />
-                    <button class="button">{ "Tritanopia" }</button><br />
-                </div>
-            </div>
-        </div>
-    }
-}
-
 #[function_component(User)]
 pub fn user_app() -> Html {
     html! {
@@ -786,17 +867,6 @@ pub fn user_app() -> Html {
 
 fn switch(routes: UserRoute) -> Html {
     match routes {
-        UserRoute::UserHome => html! {
-            <div>
-                <UserHome />
-                <SideBar />
-            </div>
-        },
-
-        UserRoute::UserLogin => html! {
-            <UserLogin />
-        },
-
         UserRoute::UserRegister => html! {
             <div>
                 <UserRegister />
@@ -828,18 +898,6 @@ fn switch(routes: UserRoute) -> Html {
             <SideBar />
         </div>},
 
-        UserRoute::UserPlayComputerTOOT => html! {
-        <div>
-            <UserPlayComputerTOOT />
-            <SideBar />
-        </div>},
-
-        UserRoute::UserPlayHumanTOOT => html! {
-        <div>
-            <UserPlayHumanTOOT />
-            <SideBar />
-        </div>},
-
         UserRoute::UserGameHistory => html! {
         <div>
             <UserGameHistory />
@@ -849,12 +907,6 @@ fn switch(routes: UserRoute) -> Html {
         UserRoute::UserScoreBoard => html! {
         <div>
             <UserScoreBoard />
-            <SideBar />
-        </div>},
-
-        UserRoute::UserSettings => html! {
-        <div>
-            <UserSettings />
             <SideBar />
         </div>},
     }
