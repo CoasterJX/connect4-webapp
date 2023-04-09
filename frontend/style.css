@@ -74,6 +74,10 @@ img {
   height: auto;
 }
 
+table, th, td {
+  border: 1px solid black;
+}
+
 ::marker {
   unicode-bidi: isolate;
   font-variant-numeric: tabular-nums;

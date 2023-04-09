@@ -205,8 +205,8 @@ fn user_play_computer() -> Html {
     let generateBoard = Callback::from(move |_event: MouseEvent| {
         let width = get_input_value("board-width");
         let height = get_input_value("board-height");
-        let mode = get_input_value("board-mode");
-        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+        // let mode = get_input_value("board-mode");
+        // let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
 
         let imgprefix = "<img ";
         let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
@@ -227,25 +227,25 @@ fn user_play_computer() -> Html {
             finalString += rowFinal;
         }
 
-        let create_board_uri = format!("{}/board/create", BACKEND_URI);
+        let recover_board_uri = format!("{}/board/info", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
-                .post(create_board_uri)
+                .post(recover_board_uri)
                 .json(&json!({
-                "width": width.parse::<i64>().unwrap(),
-                "height": height.parse::<i64>().unwrap(),
-                "board": [],
-                "last_row": 0,
-                "last_col": 0,
-                "last_player": "",
-                "player_1": get_input_value("player-name"),
-                "player_2": "*",
-                "mode": pattern,
-                "difficulty": get_input_value("board-difficulty")
-                            .parse::<i64>()
-                            .unwrap(),
-                    }))
+                    "width": get_input_value("board-width").parse::<i64>().unwrap(),
+                    "height": get_input_value("board-height").clone().parse::<i64>().unwrap(),
+                    "board": [],
+                    "last_row": 0,
+                    "last_col": 0,
+                    "last_player": "",
+                    "player_1": get_input_value("player-name"),
+                    "player_2": "*",
+                    "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
+                    "difficulty": get_input_value("board-difficulty")
+                                .parse::<i64>()
+                                .unwrap(),
+                }))
                 .send()
                 .await
                 .unwrap()
@@ -254,7 +254,51 @@ fn user_play_computer() -> Html {
                 .unwrap();
 
             if !response["status"]["success"].as_bool().unwrap() {
-                log!("Board generation failed");
+                log!("Recover board failed");
+
+                let create_board_uri = format!("{}/board/create", BACKEND_URI);
+                wasm_bindgen_futures::spawn_local(async move {
+                    let client = reqwest_wasm::Client::new();
+                    let response = client
+                        .post(create_board_uri)
+                        .json(&json!({
+                        "width": get_input_value("board-width").parse::<i64>().unwrap(),
+                        "height": get_input_value("board-height").clone().parse::<i64>().unwrap(),
+                        "board": [],
+                        "last_row": 0,
+                        "last_col": 0,
+                        "last_player": "",
+                        "player_1": get_input_value("player-name"),
+                        "player_2": "*",
+                        "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
+                        "difficulty": get_input_value("board-difficulty")
+                                    .parse::<i64>()
+                                    .unwrap(),
+                            }))
+                        .send()
+                        .await
+                        .unwrap()
+                        .json::<serde_json::Value>()
+                        .await
+                        .unwrap();
+
+                    if !response["status"]["success"].as_bool().unwrap() {
+                        log!("Board generation failed");
+                    } else {
+                        set_Div_display("dimension-prompt", false);
+                        set_Div_display("difficulty-prompt", false);
+                        set_Div_display("mode-prompt", false);
+                        set_Div_display("column-prompt", true);
+                        set_Div_display("giveup-button-prompt", true);
+
+                        let _ = document()
+                            .get_element_by_id("board")
+                            .unwrap()
+                            .dyn_into::<HtmlDivElement>()
+                            .unwrap()
+                            .set_inner_html((&finalString).as_str());
+                    }
+                });
             } else {
                 set_Div_display("dimension-prompt", false);
                 set_Div_display("difficulty-prompt", false);
@@ -268,6 +312,37 @@ fn user_play_computer() -> Html {
                     .dyn_into::<HtmlDivElement>()
                     .unwrap()
                     .set_inner_html((&finalString).as_str());
+
+                let board = response["board"]["board"].as_array().unwrap();
+                for j in 0..get_input_value("board-height")
+                    .clone()
+                    .parse::<i64>()
+                    .unwrap()
+                {
+                    for i in 0..get_input_value("board-width").parse::<i64>().unwrap() {
+                        log!(board[j as usize][i as usize].as_str().unwrap());
+                        log!(response["board"]["player_1"].as_str().unwrap());
+                        if board[j as usize][i as usize].as_str().unwrap()
+                            == response["board"]["player_1"].as_str().unwrap()
+                        {
+                            let _ = document()
+                                .get_element_by_id(format!("{}-{}", j, i).as_str())
+                                .unwrap()
+                                .dyn_into::<HtmlImageElement>()
+                                .unwrap()
+                                .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
+                        } else if board[j as usize][i as usize].as_str().unwrap()
+                            == response["board"]["player_2"].as_str().unwrap()
+                        {
+                            let _ = document()
+                                .get_element_by_id(format!("{}-{}", j, i).as_str())
+                                .unwrap()
+                                .dyn_into::<HtmlImageElement>()
+                                .unwrap()
+                                .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                        }
+                    }
+                }
             }
         });
     });
@@ -479,8 +554,6 @@ fn user_play_computer() -> Html {
 
 #[function_component(UserPlayHuman)]
 fn user_play_human() -> Html {
-    let mut player = 1;
-
     let login_onclick = Callback::from(move |_event: MouseEvent| {
         let name_input1 = get_input_value("player-name1");
         let pwd_input1 = get_input_value("player-pwd1");
@@ -534,7 +607,6 @@ fn user_play_human() -> Html {
                     );
                 } else {
                     set_Div_display("dimension-prompt", true);
-                    set_Div_display("difficulty-prompt", true);
                     set_Div_display("mode-prompt", true);
                     set_Div_display("login-prompt", false);
                 }
@@ -567,21 +639,21 @@ fn user_play_human() -> Html {
             finalString += rowFinal;
         }
 
-        let create_board_uri = format!("{}/board/create", BACKEND_URI);
+        let recover_board_uri = format!("{}/board/info", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
-                .post(create_board_uri)
+                .post(recover_board_uri)
                 .json(&json!({
-                    "width": width.parse::<i64>().unwrap(),
-                    "height": height.parse::<i64>().unwrap(),
+                    "width": get_input_value("board-width").parse::<i64>().unwrap(),
+                    "height": get_input_value("board-height").clone().parse::<i64>().unwrap(),
                     "board": [],
                     "last_row": 0,
                     "last_col": 0,
                     "last_player": "",
                     "player_1": get_input_value("player-name1"),
                     "player_2": get_input_value("player-name2"),
-                    "mode": pattern,
+                    "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                     "difficulty": 1,
                 }))
                 .send()
@@ -592,10 +664,50 @@ fn user_play_human() -> Html {
                 .unwrap();
 
             if !response["status"]["success"].as_bool().unwrap() {
-                log!("Board generation failed");
+                log!("Recover board failed");
+
+                let create_board_uri = format!("{}/board/create", BACKEND_URI);
+                wasm_bindgen_futures::spawn_local(async move {
+                    let client = reqwest_wasm::Client::new();
+                    let response = client
+                        .post(create_board_uri)
+                        .json(&json!({
+                            "width": width.parse::<i64>().unwrap(),
+                            "height": height.parse::<i64>().unwrap(),
+                            "board": [],
+                            "last_row": 0,
+                            "last_col": 0,
+                            "last_player": "",
+                            "player_1": get_input_value("player-name1"),
+                            "player_2": get_input_value("player-name2"),
+                            "mode": pattern,
+                            "difficulty": 1,
+                        }))
+                        .send()
+                        .await
+                        .unwrap()
+                        .json::<serde_json::Value>()
+                        .await
+                        .unwrap();
+
+                    if !response["status"]["success"].as_bool().unwrap() {
+                        log!("Board generation failed");
+                    } else {
+                        set_Div_display("dimension-prompt", false);
+                        set_Div_display("mode-prompt", false);
+                        set_Div_display("column-prompt", true);
+                        set_Div_display("giveup-button-prompt", true);
+
+                        let _ = document()
+                            .get_element_by_id("board")
+                            .unwrap()
+                            .dyn_into::<HtmlDivElement>()
+                            .unwrap()
+                            .set_inner_html((&finalString).as_str());
+                    }
+                });
             } else {
                 set_Div_display("dimension-prompt", false);
-                set_Div_display("difficulty-prompt", false);
                 set_Div_display("mode-prompt", false);
                 set_Div_display("column-prompt", true);
                 set_Div_display("giveup-button-prompt", true);
@@ -606,6 +718,37 @@ fn user_play_human() -> Html {
                     .dyn_into::<HtmlDivElement>()
                     .unwrap()
                     .set_inner_html((&finalString).as_str());
+
+                let board = response["board"]["board"].as_array().unwrap();
+                for j in 0..get_input_value("board-height")
+                    .clone()
+                    .parse::<i64>()
+                    .unwrap()
+                {
+                    for i in 0..get_input_value("board-width").parse::<i64>().unwrap() {
+                        log!(board[j as usize][i as usize].as_str().unwrap());
+                        log!(response["board"]["player_1"].as_str().unwrap());
+                        if board[j as usize][i as usize].as_str().unwrap()
+                            == response["board"]["player_1"].as_str().unwrap()
+                        {
+                            let _ = document()
+                                .get_element_by_id(format!("{}-{}", j, i).as_str())
+                                .unwrap()
+                                .dyn_into::<HtmlImageElement>()
+                                .unwrap()
+                                .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
+                        } else if board[j as usize][i as usize].as_str().unwrap()
+                            == response["board"]["player_2"].as_str().unwrap()
+                        {
+                            let _ = document()
+                                .get_element_by_id(format!("{}-{}", j, i).as_str())
+                                .unwrap()
+                                .dyn_into::<HtmlImageElement>()
+                                .unwrap()
+                                .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                        }
+                    }
+                }
             }
         });
     });
@@ -736,7 +879,14 @@ fn user_play_human() -> Html {
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
             } else {
-                set_heading_message("winner-msg", "Computer won the game!");
+                set_heading_message(
+                    "winner-msg",
+                    format!(
+                        "{} won the game!",
+                        response["winner"].as_str().unwrap().to_owned().clone()
+                    )
+                    .as_str(),
+                );
                 set_Div_display("restart-button-prompt", true);
                 set_Div_display("column-prompt", false);
                 set_Div_display("giveup-button-prompt", false);
@@ -765,13 +915,6 @@ fn user_play_human() -> Html {
                         <div class="flex-container">
                             <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
                             <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
-                        </div>
-                    </div>
-
-                    <div id="difficulty-prompt" style="display: none">
-                        <h5 style="padding-top: 72px">{"Enter difficulty"}</h5>
-                        <div class="flex-container">
-                            <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
                         </div>
                     </div>
 
@@ -832,24 +975,208 @@ fn user_guide_TOOT() -> Html {
 
 #[function_component(UserScoreBoard)]
 fn user_score_board() -> Html {
+    let score_board_uri = format!("{}/user/all", BACKEND_URI);
+
+    wasm_bindgen_futures::spawn_local(async move {
+        let client = reqwest_wasm::Client::new();
+        let response = client
+            .get(score_board_uri)
+            .send()
+            .await
+            .unwrap()
+            .json::<serde_json::Value>()
+            .await
+            .unwrap();
+
+        log!("Here!");
+        log!(response["all_users"][0]["name"].as_str());
+
+        if !response["status"]["success"].as_bool().unwrap() {
+            log!("Get score board failed!");
+        } else {
+            let scoreboardprefix = "<table><tr><th>User</th><th>Score</th></tr>";
+            let scoreboardsuffix = "</table>";
+            let mut content = String::new();
+            for i in 0..response["all_users"].as_array().unwrap().len() {
+                content += format!(
+                    "<tr><td>{}</td><td>{}</td></tr>",
+                    response["all_users"][i]["name"].as_str().unwrap(),
+                    response["all_users"][i]["score"].as_i64().unwrap()
+                )
+                .as_str();
+            }
+            let _ = document()
+                .get_element_by_id("scoreboard")
+                .unwrap()
+                .dyn_into::<HtmlDivElement>()
+                .unwrap()
+                .set_inner_html(
+                    format!("{}{}{}", scoreboardprefix, content, scoreboardsuffix).as_str(),
+                );
+        }
+    });
+
     html! {
         <div class="sidenavpadding">
             <div>
                 <h5 style="padding-top: 72px">{"Score board"}</h5><br />
-
             </div>
+
+            <div id = "scoreboard">
+            </div><br/>
+
         </div>
     }
 }
 
 #[function_component(UserGameHistory)]
 fn user_game_history() -> Html {
+    let login_onclick = Callback::from(move |_event: MouseEvent| {
+        let name_input = get_input_value("player-name");
+        let pwd_input = get_input_value("player-pwd");
+
+        if name_input.contains("_") {
+            set_heading_message(
+                "login-msg",
+                "Login failed! Do not include \"_\" in your username.",
+            );
+        } else {
+            let verify_user_uri = format!("{}/user/verify", BACKEND_URI);
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let client = reqwest_wasm::Client::new();
+                let response = client
+                    .post(verify_user_uri)
+                    .json(&json!({
+                        "name": name_input.clone(),
+                        "pwd": pwd_input,
+                        "score": 1
+                    }))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json::<serde_json::Value>()
+                    .await
+                    .unwrap();
+
+                if !response["exists"].as_bool().unwrap() {
+                    set_heading_message(
+                        "login-msg",
+                        "Login failed! User password combination does not exist!",
+                    );
+                } else {
+                    set_Div_display("login-prompt", false);
+                    set_Div_display("game-history", true);
+
+                    let game_history_uri =
+                        format!("{}/hist/get/{}", BACKEND_URI, name_input.replace(" ", "_"));
+                    log!(game_history_uri.clone());
+
+                    wasm_bindgen_futures::spawn_local(async move {
+                        let client = reqwest_wasm::Client::new();
+                        let response = client
+                            .get(game_history_uri)
+                            .send()
+                            .await
+                            .unwrap()
+                            .json::<serde_json::Value>()
+                            .await
+                            .unwrap();
+
+                        log!("Here!");
+
+                        if !response["status"]["success"].as_bool().unwrap() {
+                            log!("Get game history failed!");
+                        } else {
+                            let scoreboardprefix = "<table><tr><th>Player 1</th><th>Player 2</th><th>Date</th><th>Width</th><th>Height</th><th>Mode</th><th>Difficulty</th><th>Winner</th></tr>";
+                            let scoreboardsuffix = "</table>";
+                            let mut content = String::new();
+
+                            for i in 0..response["hist"].as_array().unwrap().len() {
+                                let mut pattern = String::new();
+                                for j in 0..4 {
+                                    if response["hist"][i]["board"]["mode"].as_array().unwrap()[j]
+                                        == false
+                                    {
+                                        pattern += "T";
+                                    } else if response["hist"][i]["board"]["mode"]
+                                        .as_array()
+                                        .unwrap()[i]
+                                        == true
+                                    {
+                                        pattern += "O";
+                                    }
+                                }
+
+                                let mut winner = response["hist"][i]["winner"].as_str().unwrap();
+                                if winner == "*" {
+                                    winner = "Computer";
+                                }
+
+                                let mut player2 =
+                                    response["hist"][i]["board"]["player_2"].as_str().unwrap();
+                                let mut difficulty = response["hist"][i]["board"]["difficulty"]
+                                    .as_i64()
+                                    .unwrap()
+                                    .to_string();
+                                if player2 == "*" {
+                                    player2 = "Computer";
+                                } else {
+                                    difficulty = String::from("N/A");
+                                }
+
+                                content += format!(
+                                    "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                                    response["hist"][i]["board"]["player_1"].as_str().unwrap(),
+                                    player2,
+                                    response["hist"][i]["date"].as_str().unwrap(),
+                                    response["hist"][i]["board"]["width"].as_i64().unwrap(),
+                                    response["hist"][i]["board"]["height"].as_i64().unwrap(),
+                                    pattern,
+                                    difficulty,
+                                    winner,
+                                )
+                                .as_str();
+                            }
+                            let _ = document()
+                                .get_element_by_id("game-history-table")
+                                .unwrap()
+                                .dyn_into::<HtmlDivElement>()
+                                .unwrap()
+                                .set_inner_html(
+                                    format!("{}{}{}", scoreboardprefix, content, scoreboardsuffix)
+                                        .as_str(),
+                                );
+                        }
+                    });
+                }
+            });
+        }
+    });
+
     html! {
         <div class="sidenavpadding">
-            <div>
-                <h5 style="padding-top: 72px">{"Game history"}</h5><br />
 
+            <div id="login-prompt">
+                <h5 style="padding-top: 72px">{"Enter your name"}</h5>
+                    <div class="flex-container">
+                        <input id="player-name" placeholder="Your name" style="margin-left: 0px" readonly=false/>
+                        <input id="player-pwd" placeholder="Password" type = "password" readonly=false/>
+                        <button class="button" onclick={login_onclick}>{ "Check my history" }</button>
+                    </div>
+                <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
             </div>
+
+
+            <div id = "game-history" style = "display: none">
+                <div>
+                    <h5 style="padding-top: 72px">{"Game history"}</h5><br />
+                </div>
+
+                <div id = "game-history-table">
+                </div><br/>
+            </div>
+
         </div>
     }
 }
