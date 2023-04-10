@@ -71,6 +71,56 @@ fn set_Div_display(element: &str, display: bool) {
         .set_attribute("style", style);
 }
 
+fn verify_board_setting(mode: &str) -> bool {
+    let mut pass = true;
+
+    if get_input_value("board-width") == ""
+        || get_input_value("board-height") == ""
+        || get_input_value("board-mode") == ""
+    {
+        pass = false;
+    }
+
+    if mode == "computer" {
+        if get_input_value("board-difficulty") == "" {
+            pass = false;
+        }
+    }
+
+    if pass == false {
+        set_heading_message(
+            "info-msg",
+            "Please provide all information, leave no box empty!",
+        );
+        return pass;
+    }
+
+    if get_input_value("board-width").parse::<i64>().unwrap() < 1
+        || get_input_value("board-height").parse::<i64>().unwrap() < 1
+        || !get_input_value("board-mode")
+            .chars()
+            .all(|c| "OT".contains(c))
+        || get_input_value("board-mode").len() < 4
+    {
+        pass = false;
+    }
+
+    if mode == "computer" {
+        if get_input_value("board-difficulty").parse::<i64>().unwrap() < 1
+            || get_input_value("board-difficulty").parse::<i64>().unwrap() > 5
+        {
+            pass = false;
+        }
+    }
+
+    if pass == false {
+        set_heading_message("info-msg", "Invalid input!");
+        return pass;
+    }
+
+    return pass;
+}
+
 #[function_component(UserRegister)]
 
 fn user_register() -> Html {
@@ -193,9 +243,7 @@ fn user_play_computer() -> Html {
                         "Login failed! User password combination does not exist!",
                     );
                 } else {
-                    set_Div_display("dimension-prompt", true);
-                    set_Div_display("difficulty-prompt", true);
-                    set_Div_display("mode-prompt", true);
+                    set_Div_display("info-prompt", true);
                     set_Div_display("login-prompt", false);
                 }
             });
@@ -205,8 +253,13 @@ fn user_play_computer() -> Html {
     let generateBoard = Callback::from(move |_event: MouseEvent| {
         let width = get_input_value("board-width");
         let height = get_input_value("board-height");
-        // let mode = get_input_value("board-mode");
-        // let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+        if !verify_board_setting("computer") {
+            return;
+        }
+
+        set_heading_message("info-msg", "");
+
+        let difficulty = get_input_value("board-difficulty").parse::<i64>().unwrap() * 2 - 1;
 
         let imgprefix = "<img ";
         let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
@@ -234,7 +287,7 @@ fn user_play_computer() -> Html {
                 .post(recover_board_uri)
                 .json(&json!({
                     "width": get_input_value("board-width").parse::<i64>().unwrap(),
-                    "height": get_input_value("board-height").clone().parse::<i64>().unwrap(),
+                    "height": get_input_value("board-height").parse::<i64>().unwrap(),
                     "board": [],
                     "last_row": 0,
                     "last_col": 0,
@@ -242,9 +295,7 @@ fn user_play_computer() -> Html {
                     "player_1": get_input_value("player-name"),
                     "player_2": "*",
                     "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
-                    "difficulty": get_input_value("board-difficulty")
-                                .parse::<i64>()
-                                .unwrap(),
+                    "difficulty": difficulty.clone(),
                 }))
                 .send()
                 .await
@@ -271,9 +322,7 @@ fn user_play_computer() -> Html {
                         "player_1": get_input_value("player-name"),
                         "player_2": "*",
                         "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
-                        "difficulty": get_input_value("board-difficulty")
-                                    .parse::<i64>()
-                                    .unwrap(),
+                        "difficulty": difficulty,
                             }))
                         .send()
                         .await
@@ -285,9 +334,7 @@ fn user_play_computer() -> Html {
                     if !response["status"]["success"].as_bool().unwrap() {
                         log!("Board generation failed");
                     } else {
-                        set_Div_display("dimension-prompt", false);
-                        set_Div_display("difficulty-prompt", false);
-                        set_Div_display("mode-prompt", false);
+                        set_Div_display("info-prompt", false);
                         set_Div_display("column-prompt", true);
                         set_Div_display("giveup-button-prompt", true);
 
@@ -300,9 +347,7 @@ fn user_play_computer() -> Html {
                     }
                 });
             } else {
-                set_Div_display("dimension-prompt", false);
-                set_Div_display("difficulty-prompt", false);
-                set_Div_display("mode-prompt", false);
+                set_Div_display("info-prompt", false);
                 set_Div_display("column-prompt", true);
                 set_Div_display("giveup-button-prompt", true);
 
@@ -350,6 +395,15 @@ fn user_play_computer() -> Html {
     let makeMove = Callback::from(move |_event: MouseEvent| {
         let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
 
+        if column < 0 {
+            set_heading_message("winner-msg", "Invalid column number!");
+            return;
+        }
+
+        let difficulty = get_input_value("board-difficulty").parse::<i64>().unwrap() * 2 - 1;
+
+        set_heading_message("winner-msg", "");
+
         let mode = get_input_value("board-mode");
 
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
@@ -374,9 +428,7 @@ fn user_play_computer() -> Html {
                         "player_1": get_input_value("player-name"),
                         "player_2": "*",
                         "mode": pattern,
-                        "difficulty": get_input_value("board-difficulty")
-                                    .parse::<i64>()
-                                    .unwrap()
+                        "difficulty": difficulty
                     },
                         "col": column}))
                 .send()
@@ -443,6 +495,7 @@ fn user_play_computer() -> Html {
         let mode = get_input_value("board-mode");
 
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+        let difficulty = get_input_value("board-difficulty").parse::<i64>().unwrap() * 2 - 1;
 
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
@@ -463,9 +516,7 @@ fn user_play_computer() -> Html {
                         "player_1": get_input_value("player-name"),
                         "player_2": "*",
                         "mode": pattern,
-                        "difficulty": get_input_value("board-difficulty")
-                                    .parse::<i64>()
-                                    .unwrap()
+                        "difficulty": difficulty
                     },
                         "col": -1}))
                 .send()
@@ -501,29 +552,38 @@ fn user_play_computer() -> Html {
                     <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
 
-                <div class="flex-container">
-                    <div id="dimension-prompt" style="display: none">
-                        <h5 style="padding-top: 72px">{"Enter board dimensions"}</h5>
-                        <div class="flex-container">
-                            <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
-                            <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
-                        </div>
-                    </div>
 
-                    <div id="difficulty-prompt" style="display: none">
-                        <h5 style="padding-top: 72px">{"Enter difficulty"}</h5>
-                        <div class="flex-container">
-                            <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                <div id = "info-prompt" style="display: none">
+                    <div class="flex-container">
+                        <div id="dimension-prompt">
+                            <h5 style="padding-top: 72px">{"Enter board dimensions"}</h5>
+                            <div class="flex-container">
+                                <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                                <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
+                            </div>
                         </div>
-                    </div>
 
-                    <div id="mode-prompt" style="display: none">
-                        <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
-                        <div class="flex-container">
-                            <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
-                            <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                        <div id="difficulty-prompt">
+                            <h5 style="padding-top: 72px">{"Enter difficulty"}</h5>
+                            <div class="flex-container">
+                                <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                            </div>
+                        </div>
+
+                        <div id="mode-prompt">
+                            <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
+                            <div class="flex-container">
+                                <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                                <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                            </div>
                         </div>
                     </div>
+                    <ul>
+                        <li>{"Height and width: A positive interger."}</li>
+                        <li>{"Difficulty: An integer between 1 and 5, inclusive."}</li>
+                        <li>{"Mode: 4 letters consist of only \"O\" and \"T\"."}</li>
+                    </ul>
+                    <h5 id="info-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
 
                 <div id="column-prompt" style="display: none">
@@ -539,7 +599,7 @@ fn user_play_computer() -> Html {
                 <a href="/user/play-computer">{"Restart"}</a>
             </div>
 
-            <h5 id="winner-msg" style="color: green; font-weight: normal">{ "" }</h5>
+            <h5 id="winner-msg" style="font-weight: normal">{ "" }</h5>
 
             <div id = "giveup-button-prompt"  style="display: none">
                 <button id = "giveup-button" style="margin-left: 0px" class="button" onclick={giveup}>{ "Giveup" }</button>
@@ -606,8 +666,7 @@ fn user_play_human() -> Html {
                         "Login failed! User password combination does not exist!",
                     );
                 } else {
-                    set_Div_display("dimension-prompt", true);
-                    set_Div_display("mode-prompt", true);
+                    set_Div_display("info-prompt", true);
                     set_Div_display("login-prompt", false);
                 }
             });
@@ -617,8 +676,12 @@ fn user_play_human() -> Html {
     let generateBoard = Callback::from(move |_event: MouseEvent| {
         let width = get_input_value("board-width");
         let height = get_input_value("board-height");
-        let mode = get_input_value("board-mode");
-        let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+
+        if !verify_board_setting("human") {
+            return;
+        }
+
+        set_heading_message("info-msg", "");
 
         let imgprefix = "<img ";
         let imgsuffix = "src= \"https:\\/\\/i.ibb.co/GFk3XzG/cell-empty.png\" alt=\"Cell\" />";
@@ -680,7 +743,7 @@ fn user_play_human() -> Html {
                             "last_player": "",
                             "player_1": get_input_value("player-name1"),
                             "player_2": get_input_value("player-name2"),
-                            "mode": pattern,
+                            "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                             "difficulty": 1,
                         }))
                         .send()
@@ -693,8 +756,7 @@ fn user_play_human() -> Html {
                     if !response["status"]["success"].as_bool().unwrap() {
                         log!("Board generation failed");
                     } else {
-                        set_Div_display("dimension-prompt", false);
-                        set_Div_display("mode-prompt", false);
+                        set_Div_display("info-prompt", false);
                         set_Div_display("column-prompt", true);
                         set_Div_display("giveup-button-prompt", true);
 
@@ -707,8 +769,7 @@ fn user_play_human() -> Html {
                     }
                 });
             } else {
-                set_Div_display("dimension-prompt", false);
-                set_Div_display("mode-prompt", false);
+                set_Div_display("info-prompt", false);
                 set_Div_display("column-prompt", true);
                 set_Div_display("giveup-button-prompt", true);
 
@@ -755,6 +816,13 @@ fn user_play_human() -> Html {
 
     let makeMove = Callback::from(move |_event: MouseEvent| {
         let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
+
+        if column < 0 {
+            set_heading_message("winner-msg", "Invalid column number!");
+            return;
+        }
+
+        set_heading_message("winner-msg", "");
 
         let mode = get_input_value("board-mode");
 
@@ -909,22 +977,29 @@ fn user_play_human() -> Html {
                     <h5 id="login-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
 
-                <div class="flex-container">
-                    <div id="dimension-prompt" style="display: none">
-                        <h5 style="padding-top: 72px">{"Enter board dimensions"}</h5>
-                        <div class="flex-container">
-                            <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
-                            <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
+                <div id = "info-prompt" style="display: none">
+                    <div class="flex-container">
+                        <div id="dimension-prompt">
+                            <h5 style="padding-top: 72px">{"Enter board dimensions"}</h5>
+                            <div class="flex-container">
+                                <input id="board-width" placeholder="Width" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                                <input id="board-height" placeholder="Height" type = "number" min = "1" readonly=false/>
+                            </div>
                         </div>
-                    </div>
 
-                    <div id="mode-prompt" style="display: none">
-                        <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
-                        <div class="flex-container">
-                            <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
-                            <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                        <div id="mode-prompt">
+                            <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
+                            <div class="flex-container">
+                                <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                                <button class="button" onclick={generateBoard}>{ "Generate" }</button>
+                            </div>
                         </div>
                     </div>
+                    <ul>
+                        <li>{"Height and width: A positive interger."}</li>
+                        <li>{"Mode: 4 letters consist of only \"O\" and \"T\"."}</li>
+                    </ul>
+                    <h5 id="info-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
 
                 <div id="column-prompt" style="display: none">
@@ -940,7 +1015,7 @@ fn user_play_human() -> Html {
                 <a href="/user/play-human">{"Restart"}</a>
             </div>
 
-            <h5 id="winner-msg" style="color: green; font-weight: normal">{ "" }</h5>
+            <h5 id="winner-msg" style="font-weight: normal">{ "" }</h5>
 
             <div id = "giveup-button-prompt"  style="display: none">
                 <button id = "giveup-button" style="margin-left: 0px" class="button" onclick={giveup}>{ "Giveup" }</button>
@@ -988,7 +1063,6 @@ fn user_score_board() -> Html {
             .await
             .unwrap();
 
-        log!("Here!");
         log!(response["all_users"][0]["name"].as_str());
 
         if !response["status"]["success"].as_bool().unwrap() {
@@ -1115,10 +1189,14 @@ fn user_game_history() -> Html {
 
                                 let mut player2 =
                                     response["hist"][i]["board"]["player_2"].as_str().unwrap();
-                                let mut difficulty = response["hist"][i]["board"]["difficulty"]
+
+
+                                let mut difficulty_raw = response["hist"][i]["board"]["difficulty"]
                                     .as_i64()
-                                    .unwrap()
-                                    .to_string();
+                                    .unwrap();
+
+                                let mut difficulty = ((difficulty_raw+1)/2).to_string();
+
                                 if player2 == "*" {
                                     player2 = "Computer";
                                 } else {
