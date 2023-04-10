@@ -615,6 +615,14 @@ fn user_play_human() -> Html {
         let name_input2 = get_input_value("player-name2");
         let pwd_input2 = get_input_value("player-pwd2");
 
+        if name_input1 == name_input2 {
+            set_heading_message(
+                "login-msg",
+                "Login failed! You cannot play with yourself.",
+            );
+            return;
+        }
+
         if name_input1.contains("_") || name_input2.contains("_") {
             set_heading_message(
                 "login-msg",
