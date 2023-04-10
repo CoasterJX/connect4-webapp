@@ -365,8 +365,6 @@ fn user_play_computer() -> Html {
                     .unwrap()
                 {
                     for i in 0..get_input_value("board-width").parse::<i64>().unwrap() {
-                        log!(board[j as usize][i as usize].as_str().unwrap());
-                        log!(response["board"]["player_1"].as_str().unwrap());
                         if board[j as usize][i as usize].as_str().unwrap()
                             == response["board"]["player_1"].as_str().unwrap()
                         {
@@ -437,8 +435,6 @@ fn user_play_computer() -> Html {
                 .json::<serde_json::Value>()
                 .await
                 .unwrap();
-
-            log!("{:#?}", response["winner"].to_string());
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
@@ -525,8 +521,6 @@ fn user_play_computer() -> Html {
                 .json::<serde_json::Value>()
                 .await
                 .unwrap();
-
-            log!("{:#?}", response["winner"].to_string());
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
@@ -787,8 +781,6 @@ fn user_play_human() -> Html {
                     .unwrap()
                 {
                     for i in 0..get_input_value("board-width").parse::<i64>().unwrap() {
-                        log!(board[j as usize][i as usize].as_str().unwrap());
-                        log!(response["board"]["player_1"].as_str().unwrap());
                         if board[j as usize][i as usize].as_str().unwrap()
                             == response["board"]["player_1"].as_str().unwrap()
                         {
@@ -857,8 +849,6 @@ fn user_play_human() -> Html {
                 .json::<serde_json::Value>()
                 .await
                 .unwrap();
-
-            log!("{:#?}", response["winner"].to_string());
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
@@ -941,8 +931,6 @@ fn user_play_human() -> Html {
                 .json::<serde_json::Value>()
                 .await
                 .unwrap();
-
-            log!("{:#?}", response["winner"].to_string());
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
@@ -1063,8 +1051,6 @@ fn user_score_board() -> Html {
             .await
             .unwrap();
 
-        log!(response["all_users"][0]["name"].as_str());
-
         if !response["status"]["success"].as_bool().unwrap() {
             log!("Get score board failed!");
         } else {
@@ -1144,7 +1130,6 @@ fn user_game_history() -> Html {
 
                     let game_history_uri =
                         format!("{}/hist/get/{}", BACKEND_URI, name_input.replace(" ", "_"));
-                    log!(game_history_uri.clone());
 
                     wasm_bindgen_futures::spawn_local(async move {
                         let client = reqwest_wasm::Client::new();
@@ -1156,8 +1141,6 @@ fn user_game_history() -> Html {
                             .json::<serde_json::Value>()
                             .await
                             .unwrap();
-
-                        log!("Here!");
 
                         if !response["status"]["success"].as_bool().unwrap() {
                             log!("Get game history failed!");
@@ -1190,12 +1173,10 @@ fn user_game_history() -> Html {
                                 let mut player2 =
                                     response["hist"][i]["board"]["player_2"].as_str().unwrap();
 
+                                let mut difficulty_raw =
+                                    response["hist"][i]["board"]["difficulty"].as_i64().unwrap();
 
-                                let mut difficulty_raw = response["hist"][i]["board"]["difficulty"]
-                                    .as_i64()
-                                    .unwrap();
-
-                                let mut difficulty = ((difficulty_raw+1)/2).to_string();
+                                let mut difficulty = ((difficulty_raw + 1) / 2).to_string();
 
                                 if player2 == "*" {
                                     player2 = "Computer";
