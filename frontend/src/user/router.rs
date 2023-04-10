@@ -438,6 +438,7 @@ fn user_play_computer() -> Html {
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
+                set_heading_message("winner-msg", response["status"]["msg"].as_str().unwrap());
             } else {
                 let human_row = response["human_row"].clone().to_string();
                 let human_column = response["human_col"].clone().to_string();
@@ -852,6 +853,7 @@ fn user_play_human() -> Html {
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Make move failed");
+                set_heading_message("winner-msg", response["status"]["msg"].as_str().unwrap());
             } else {
                 let human_row = response["human_row"].clone().to_string();
                 let human_column = response["human_col"].clone().to_string();
@@ -1158,7 +1160,7 @@ fn user_game_history() -> Html {
                                         pattern += "T";
                                     } else if response["hist"][i]["board"]["mode"]
                                         .as_array()
-                                        .unwrap()[i]
+                                        .unwrap()[j]
                                         == true
                                     {
                                         pattern += "O";
@@ -1168,6 +1170,8 @@ fn user_game_history() -> Html {
                                 let mut winner = response["hist"][i]["winner"].as_str().unwrap();
                                 if winner == "*" {
                                     winner = "Computer";
+                                } else if winner == "^" {
+                                    winner = "Draw";
                                 }
 
                                 let mut player2 =

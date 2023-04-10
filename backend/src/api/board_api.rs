@@ -12,6 +12,8 @@ use rocket::{
     State
 };
 
+use rand::seq::SliceRandom;
+
 extern crate argon2;
 
 const COMPUTER_STR: &str = "*";
@@ -69,6 +71,16 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             if b.allows_move(&col) {
                 let next_player = b.get_next_player();
                 b.perform_move(col.clone(), next_player.clone());
+            } else {
+                // case when move is invalid
+                return Ok(Json(PerformMoveResponse::new(
+                    (false, "Invalid move: Column exceeds upper bound."),
+                    (-1, -1),
+                    (-1, -1),
+                    "".to_owned(),
+                    "".to_owned(),
+                    &Board::empty()
+                )));
             }
             let human_move = (b.last_row.clone(), b.last_col.clone());
 
@@ -114,6 +126,22 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             // case when the opposite is computer
             if b.get_next_player() == COMPUTER_STR {
                 let mut b_sim = b.clone();
+
+                // add a mutation possibility
+                let (a, bc, c) = (
+                    b_sim.difficulty.clone(),
+                    b_sim.difficulty.clone() - 2,
+                    b_sim.difficulty.clone() - 4
+                );
+                b_sim.difficulty = vec![
+                    a, a, a, a, a, a, a,
+                    bc, bc,
+                    c
+                ].choose(&mut rand::thread_rng()).unwrap().clone();
+                if b_sim.difficulty < 1 {
+                    b_sim.difficulty = 1;
+                }
+
                 let (_, best_move) = b_sim.alpha_beta(
                     b.get_next_player(),
                     i64::MIN,
