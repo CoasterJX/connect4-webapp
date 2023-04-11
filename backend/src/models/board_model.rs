@@ -1,4 +1,4 @@
-use std::{cmp::{max, min}, collections::HashMap};
+use std::{cmp::{max, min}, collections::HashMap, vec};
 
 use serde::{Serialize, Deserialize};
 use rand::seq::SliceRandom;
@@ -39,6 +39,8 @@ pub struct Board {
     pub player_2: String,
     pub mode: Vec<bool>,
     pub difficulty: i64,
+    pub p1_remain: Vec<i64>,
+    pub p2_remain: Vec<i64>
 }
 
 impl Board {
@@ -82,10 +84,10 @@ impl Board {
     /*
     Get a vector of all movable columns that can be performed on the board.
      */
-    pub fn available_moves(&self) -> Vec<i64> {
+    pub fn available_moves(&self, reverse: &bool, player: &String) -> Vec<i64> {
         let mut allowable_moves: Vec<i64> = Vec::new();
         for col in 0..self.width {
-            if self.allows_move(&col){
+            if self.allows_move(&col, player, reverse){
                 allowable_moves.push(col.clone());
             }
         }
@@ -96,7 +98,37 @@ impl Board {
     /*
     Check if player can perform move on the specified column.
      */
-    pub fn allows_move(&self, col: &i64) -> bool {
+    pub fn allows_move(&self, col: &i64, player: &String, reverse: &bool) -> bool {
+
+        // check if player have enough pieces
+        if self.p1_remain.len() == 2 {
+
+            if *player == self.player_1 {
+
+                if *reverse {
+                    if self.p1_remain[1] == 0 {
+                        return false;
+                    }
+                } else {
+                    if self.p1_remain[0] == 0 {
+                        return false;
+                    }
+                }
+
+            } else {
+
+                if *reverse {
+                    if self.p2_remain[1] == 0 {
+                        return false;
+                    }
+                } else {
+                    if self.p2_remain[0] == 0 {
+                        return false;
+                    }
+                }
+            }
+        }
+
         if *col < 0 || *col >= self.width {
             return false;
         } else {
@@ -109,16 +141,42 @@ impl Board {
     }
 
     /*
-    Perform a move at specified column for specified player.
+    Perform a move at specified column for specified player, reverse only for TOOT.
      */
-    pub fn perform_move(&mut self, col: i64, ox: String) {
+    pub fn perform_move(&mut self, col: i64, ox: String, reverse: &bool) {
+        let chess;
+        if *reverse {
+            chess = self.opponent(&ox);
+        } else {
+            chess = ox.clone();
+        }
+
         for row in (0..self.height).rev() {
             if self.board[row as usize][col as usize] == ' '.to_string() {
-                self.board[row as usize][col as usize] = ox.clone();
+                self.board[row as usize][col as usize] = chess.clone();
                 self.last_row = row.clone();
                 self.last_col = col.clone();
                 self.last_player = ox.clone();
-                return;
+                break;
+            }
+        }
+
+        if self.p1_remain.len() == 2 {
+            if ox == self.player_1 {
+
+                if *reverse {
+                    self.p1_remain[1] -= 1;
+                } else {
+                    self.p1_remain[0] -= 1;
+                }
+
+            } else {
+
+                if *reverse {
+                    self.p2_remain[1] -= 1;
+                } else {
+                    self.p2_remain[0] -= 1;
+                }
             }
         }
     }
@@ -138,6 +196,8 @@ impl Board {
             player_2: ' '.to_string(),
             mode: vec![],
             difficulty: 1,
+            p1_remain: vec![],
+            p2_remain: vec![]
         }
     }
 
@@ -148,7 +208,7 @@ impl Board {
     - mode: whether TOOT or OTTO or TTTT, etc.
     - difficulty: computer difficulty level, only useful when computer is involved.
      */
-    pub fn new(w: i64, h: i64, p1: String, p2: String, m: Vec<bool>, d: i64) -> Self {
+    pub fn new(w: i64, h: i64, p1: String, p2: String, m: Vec<bool>, d: i64, p1_r: Vec<i64>, p2_r: Vec<i64>) -> Self {
         let mut board_init: Vec<Vec<String>> = vec![];
         for r in 0..h {
             board_init.push(vec![]);
@@ -167,6 +227,8 @@ impl Board {
             player_2: p2.to_string(),
             mode: m,
             difficulty: d,
+            p1_remain: p1_r,
+            p2_remain: p2_r
         }
     }
 
@@ -227,6 +289,8 @@ impl Board {
         let row = self.last_row;
         let col = self.last_col;
         let ox = self.last_player.clone();
+
+        let (mut is_win, mut is_lose) = (false, false);
         
         // No moves made on the board so far
         if row == -1 && col == -1 {
@@ -240,13 +304,15 @@ impl Board {
             for i in 0..4 {
                 win = win && self.board[row as usize][(c+i) as usize] == self.pattern(&ox, &self.mode[i as usize]);
             }
-            if win { return (win, self.last_player.clone()); }
+            is_win = is_win || win;
+            //if win { return (win, self.last_player.clone()); }
 
             let mut lose = true;
             for i in 0..4 {
                 lose = lose && self.board[row as usize][(c+i) as usize] == self.pattern_enemy(&ox, &self.mode[i as usize]);
             }
-            if lose { return (lose, self.get_next_player().clone()); }
+            is_lose = is_lose || lose;
+            //if lose { return (lose, self.get_next_player().clone()); }
         }
 
         // Checks to see if there is a vertical win
@@ -256,13 +322,15 @@ impl Board {
             for i in 0..4 {
                 win = win && self.board[(row+i) as usize][col as usize] == self.pattern(&ox, &self.mode[i as usize]);
             }
-            if win { return (win, self.last_player.clone()); }
+            is_win = is_win || win;
+            //if win { return (win, self.last_player.clone()); }
 
             let mut lose = true;
             for i in 0..4 {
                 lose = lose && self.board[(row+i) as usize][col as usize] == self.pattern_enemy(&ox, &self.mode[i as usize]);
             }
-            if lose { return (lose, self.get_next_player().clone()); }
+            is_lose = is_lose || lose;
+            //if lose { return (lose, self.get_next_player().clone()); }
         }
 
         // Checks to see if there is a win on the upper right diagonal
@@ -275,13 +343,15 @@ impl Board {
                 for i in 0..4 {
                     win = win && self.board[(r+i) as usize][(c+i) as usize] == self.pattern(&ox, &self.mode[i as usize])
                 }
-                if win { return (win, self.last_player.clone()); }
+                is_win = is_win || win;
+                //if win { return (win, self.last_player.clone()); }
 
                 let mut lose = true;
                 for i in 0..4 {
                     lose = lose && self.board[(r+i) as usize][(c+i) as usize] == self.pattern_enemy(&ox, &self.mode[i as usize])
                 }
-                if lose { return (lose, self.get_next_player().clone()); }
+                is_lose = is_lose || lose;
+                //if lose { return (lose, self.get_next_player().clone()); }
             }
         }
 
@@ -295,25 +365,36 @@ impl Board {
                 for i in 0..4 {
                     win = win && self.board[(r+i) as usize][(c-i) as usize] == self.pattern(&ox, &self.mode[i as usize])
                 }
-                if win { return (win, self.last_player.clone()); }
+                is_win = is_win || win;
+                //if win { return (win, self.last_player.clone()); }
 
                 let mut lose = true;
                 for i in 0..4 {
                     lose = lose && self.board[(r+i) as usize][(c-i) as usize] == self.pattern_enemy(&ox, &self.mode[i as usize])
                 }
-                if lose { return (lose, self.get_next_player().clone()); }
+                is_lose = is_lose || lose;
+                //if lose { return (lose, self.get_next_player().clone()); }
             }
         }
 
-        // no winner if none of the above is satisfied
-        return (false, "".to_owned());
+        match (is_win, is_lose) {
+            (true, _) => (true, self.last_player.clone()),
+            (false, true) => (true, self.get_next_player().clone()),
+            _ => (false, "".to_owned())
+        }
+
+        // // no winner if none of the above is satisfied
+        // return (false, "".to_owned());
     }
 
     /*
     Check if it is a draw.
      */
     pub fn is_draw(&self) -> bool {
-        return self.available_moves().len() == 0;
+        return self.available_moves(&false, &self.player_1).len() == 0
+            && self.available_moves(&true, &self.player_1).len() == 0
+            && self.available_moves(&false, &self.player_2).len() == 0
+            && self.available_moves(&true, &self.player_2).len() == 0;
     }
 
     /*
@@ -327,7 +408,7 @@ impl Board {
             match input.trim().parse() {
                 Ok(p) => {
                     let player_move: i64 = p;
-                    if self.allows_move(&player_move) {
+                    if self.allows_move(&player_move, &ox, &false) {
                         return p;
                     } else {
                         println!("Move is not allowed. Please try again.");
@@ -362,8 +443,8 @@ impl Board {
         loop {
             println!("{}", self.print());
             if ox == "" || ox == "*" {
-                let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), i64::MIN, i64::MAX, self.difficulty);
-                self.perform_move(col_move, ox.clone());
+                let (_, col_move): (i64, i64) = self.alpha_beta(ox.clone(), i64::MIN, i64::MAX, self.difficulty, &false, &false);
+                self.perform_move(col_move, ox.clone(), &false);
                 if self.player_2 == "*" {  // This checks if we are playing a computer vs computer game.
                     if ox == "" {
                         println!("Computer 1 performed move {}.", col_move);
@@ -375,7 +456,7 @@ impl Board {
                 }
             } else {
                 let col_move: i64 = self.get_player_move(ox.clone());
-                self.perform_move(col_move, ox.clone());
+                self.perform_move(col_move, ox.clone(), &false);
             }
             if self.has_winner() {
                 return ox;
@@ -394,13 +475,19 @@ impl Board {
     /*
     Check who is the winner. Should only be called after is_terminal.
      */
-    pub fn game_value(&self) -> i64 {
+    pub fn game_value(&self, reverse: &bool) -> i64 {
 
         let (hw, winner) = self._has_winner();
         if hw {
             if winner == self.player_1 {
+                // if *reverse {
+                //     return -1;
+                // }
                 return 1;
             } else {
+                // if *reverse {
+                //     return 1;
+                // }
                 return -1;
             }
         } else if self.is_draw() {
@@ -420,16 +507,16 @@ impl Board {
         1. the score of the optimal move for the player who is to act;
         2. the optimal move
     */
-    pub fn alpha_beta(&mut self, player: String, mut alpha: i64, mut beta: i64, ply: i64) -> (i64, i64) {
+    pub fn alpha_beta(&mut self, player: String, mut alpha: i64, mut beta: i64, ply: i64, reverse: &bool, is_toot: &bool) -> (i64, i64) {
 
         if self.is_terminal() {
-            let game_value = self.game_value();
+            let game_value = self.game_value(reverse);
             if game_value < 0 {
                 return (game_value - ply, 0);
             } else if game_value > 0 {
                 return (game_value + ply, 0);
             }
-            return (self.game_value(), 0);
+            return (self.game_value(reverse), 0);
         }
 
         let init_score = HashMap::from([
@@ -440,15 +527,49 @@ impl Board {
         if ply <= 0 {
             return (0, 0);
         }
+
+        if ply == self.difficulty {
+            println!("{:?} & {:?}", reverse, player);
+            println!("{:?}", self.available_moves(reverse, &player));
+        }
         
         let ((mut score, next_player), mut mov) = (init_score.get(&player).unwrap(), -1);
 
-        for m in self.available_moves() {
-            self.perform_move(m.clone(), player.clone());
-            let (m_score, _) = self.clone().alpha_beta(next_player.to_string(), alpha, beta, ply-1);
+        for m in self.available_moves(reverse, &player) {
+            self.perform_move(m.clone(), player.clone(), reverse);
+            let (mut m_score, m_mov) = self.clone().alpha_beta(next_player.to_string(), alpha, beta, ply-1, &false, is_toot);
+            if is_toot.clone() {
+                let (m_score_2, m_mov_2) = self.clone().alpha_beta(next_player.to_string(), alpha, beta, ply-1, &true, is_toot);
+
+                // when enemy has no own piece
+                // if m_mov == -1 {
+                //     if m_mov_2 == -1 {
+                //         if self._has_winner().0 && self._has_winner().1 == player {
+                //             return (init_score.get(&self.opponent(&player)).unwrap().0, m.clone())
+                //         }
+                //         if self._has_winner().0 && self._has_winner().1 == self.opponent(&player) {
+                //             if mov == -1 {
+
+                //             }
+                //         }
+                //     }
+                // }
+
+                if player == self.player_1.clone() {
+                    m_score = min(m_score.clone(), m_score_2.clone());
+                }
+
+                if player == self.player_2.clone() {
+                    m_score = max(m_score.clone(), m_score_2.clone());
+                }
+            }
 
             if ply == self.difficulty {
                 println!("{:?} - {:?}", m, m_score);
+            }
+
+            if ply == self.difficulty - 1 {
+                println!("--- {:?} - {:?}", m, m_score);
             }
 
             if player == self.player_1.clone() {
@@ -499,6 +620,7 @@ impl Board {
 pub struct PerformMoveRequest {
     pub board_info: Board,
     pub col: i64,
+    pub reverse: bool,
 }
 
 // response model
@@ -508,14 +630,16 @@ pub struct PerformMoveResponse {
     pub player: bool,
     pub human_row: i64,
     pub human_col: i64,
+    pub human_reverse: bool,
     pub cmput_row: i64,
     pub cmput_col: i64,
+    pub cmput_reverse: bool,
     pub winner: String,
 }
 
 impl PerformMoveResponse {
 
-    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), winner: String, player: String, board: &Board) -> Self {
+    pub fn new(status: (bool, &str), human_move: (i64, i64), cmput_move: (i64, i64), rev: (bool, bool), winner: String, player: String, board: &Board) -> Self {
 
         let s = if status.0 {
             GeneralStatus::success()
@@ -526,8 +650,10 @@ impl PerformMoveResponse {
             player: player.eq(&board.player_2),
             human_row: human_move.0,
             human_col: human_move.1,
+            human_reverse: rev.0,
             cmput_row: cmput_move.0,
             cmput_col: cmput_move.1,
+            cmput_reverse: rev.1,
             winner
         }
     }

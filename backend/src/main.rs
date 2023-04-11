@@ -209,9 +209,25 @@ fn rocket() -> _ {
                 }
 
                 let db: BoardRepo = BoardRepo::init();
-                let mut game_board: Board = match db.get_board(&Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone())) {
+                let mut game_board: Board = match db.get_board(&Board::new(
+                    width.clone(), 
+                    height.clone(), 
+                    player_1.clone(), 
+                    player_2.clone(), 
+                    mode.clone(), 
+                    difficulty.clone(),
+                    vec![], vec![]
+                )) {
                     Some(board) => board,
-                    None => Board::new(width.clone(), height.clone(), player_1.clone(), player_2.clone(), mode.clone(), difficulty.clone()),
+                    None => Board::new(
+                        width.clone(), 
+                        height.clone(), 
+                        player_1.clone(), 
+                        player_2.clone(), 
+                        mode.clone(), 
+                        difficulty.clone(),
+                        vec![], vec![]
+                    ),
                 };
                 let winner: String = game_board.host_game();
                 if player_2 == "*" {
