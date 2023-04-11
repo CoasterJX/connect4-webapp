@@ -9,8 +9,8 @@ use std::{collections::HashMap, sync::Arc};
 use std::{sync::Mutex, thread};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    Element, Event, HtmlDivElement, HtmlHeadingElement, HtmlImageElement, HtmlInputElement, HtmlButtonElement,
-    MouseEvent,
+    Element, Event, HtmlButtonElement, HtmlDivElement, HtmlHeadingElement, HtmlImageElement,
+    HtmlInputElement, MouseEvent,
 };
 use yew::{function_component, html, Callback, Html};
 use yew_router::{navigator, prelude::*};
@@ -112,6 +112,12 @@ fn verify_board_setting(mode: &str) -> bool {
         {
             pass = false;
         }
+    }
+
+    if get_input_value("board-rule").parse::<i64>().unwrap() < 0
+        || get_input_value("board-rule").parse::<i64>().unwrap() > 1
+    {
+        pass = false;
     }
 
     if pass == false {
@@ -311,11 +317,7 @@ fn user_play_computer() -> Html {
                 log!("Recover board failed");
 
                 let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
-                let piece_remain = if board_rule == 1 {
-                    vec![6, 6]
-                } else {
-                    vec![]
-                };
+                let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
 
                 let create_board_uri = format!("{}/board/create", BACKEND_URI);
                 wasm_bindgen_futures::spawn_local(async move {
@@ -350,6 +352,15 @@ fn user_play_computer() -> Html {
                         set_Div_display("column-prompt", true);
                         set_Div_display("giveup-button-prompt", true);
 
+                        if board_rule == 0 {
+                            let _ = document()
+                                .get_element_by_id("column-button-reverse")
+                                .unwrap()
+                                .dyn_into::<HtmlButtonElement>()
+                                .unwrap()
+                                .set_attribute("style", "display: none");
+                        }
+
                         let _ = document()
                             .get_element_by_id("board")
                             .unwrap()
@@ -362,6 +373,14 @@ fn user_play_computer() -> Html {
                 set_Div_display("info-prompt", false);
                 set_Div_display("column-prompt", true);
                 set_Div_display("giveup-button-prompt", true);
+                if get_input_value("board-rule").parse::<i64>().unwrap() == 0 {
+                    let _ = document()
+                        .get_element_by_id("column-button-reverse")
+                        .unwrap()
+                        .dyn_into::<HtmlButtonElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: none");
+                }
 
                 let _ = document()
                     .get_element_by_id("board")
@@ -403,6 +422,10 @@ fn user_play_computer() -> Html {
     });
 
     let makeMove = Callback::from(move |event: MouseEvent| {
+        if get_input_value("column-number") == "" {
+            return;
+        }
+
         let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
 
         if column < 0 {
@@ -420,7 +443,13 @@ fn user_play_computer() -> Html {
         // Make the move
         let make_move_uri = format!("{}/board/move", BACKEND_URI);
 
-        let clicked_button = event.target().unwrap().dyn_into::<HtmlButtonElement>().unwrap().get_attribute("id").unwrap();
+        let clicked_button = event
+            .target()
+            .unwrap()
+            .dyn_into::<HtmlButtonElement>()
+            .unwrap()
+            .get_attribute("id")
+            .unwrap();
         log!(clicked_button.clone());
         let reverse = clicked_button == "column-button-reverse";
         wasm_bindgen_futures::spawn_local(async move {
@@ -599,15 +628,15 @@ fn user_play_computer() -> Html {
                         <div id="difficulty-prompt">
                             <h5 style="padding-top: 72px">{"Enter difficulty"}</h5>
                             <div class="flex-container">
-                                <input id="board-difficulty" placeholder="Difficulty" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
+                                <input id="board-difficulty" placeholder="Difficulty" type = "number" min = "1" readonly=false/>
                             </div>
                         </div>
 
                         <div id="mode-prompt">
                             <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
                             <div class="flex-container">
-                                <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
-                                
+                                <input id="board-mode" placeholder="Mode" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+
                             </div>
                         </div>
 
@@ -624,6 +653,7 @@ fn user_play_computer() -> Html {
                         <li>{"Height and width: A positive interger."}</li>
                         <li>{"Difficulty: An integer between 1 and 5, inclusive."}</li>
                         <li>{"Mode: 4 letters consist of only \"O\" and \"T\"."}</li>
+                        <li>{"Rule: 1 for enabling and 0 for disabling the TOOT rule"}</li>
                     </ul>
                     <h5 id="info-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
@@ -633,7 +663,7 @@ fn user_play_computer() -> Html {
                     <div class="flex-container" >
                         <input id="column-number" placeholder="Column number" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
                         <button id = "column-button" class="button" onclick={makeMove.clone()}>{ "Place My Checker" }</button>
-                        <button id = "column-button-reverse" class="button" onclick={makeMove.clone()}>{ "Place Oppponent Checker" }</button>
+                        <button id = "column-button-reverse" class="button" onclick={makeMove.clone()}>{ "Place Opponent's Checker" }</button>
                     </div>
                 </div>
             </div><br />
@@ -664,10 +694,7 @@ fn user_play_human() -> Html {
         let pwd_input2 = get_input_value("player-pwd2");
 
         if name_input1 == name_input2 {
-            set_heading_message(
-                "login-msg",
-                "Login failed! You cannot play with yourself.",
-            );
+            set_heading_message("login-msg", "Login failed! You cannot play with yourself.");
             return;
         }
 
@@ -769,6 +796,8 @@ fn user_play_human() -> Html {
                     "player_2": get_input_value("player-name2"),
                     "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                     "difficulty": 1,
+                    "p1_remain": [],
+                    "p2_remain": []
                 }))
                 .send()
                 .await
@@ -779,6 +808,9 @@ fn user_play_human() -> Html {
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Recover board failed");
+
+                let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+                let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
 
                 let create_board_uri = format!("{}/board/create", BACKEND_URI);
                 wasm_bindgen_futures::spawn_local(async move {
@@ -796,6 +828,8 @@ fn user_play_human() -> Html {
                             "player_2": get_input_value("player-name2"),
                             "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                             "difficulty": 1,
+                            "p1_remain": piece_remain.clone(),
+                            "p2_remain": piece_remain.clone(),
                         }))
                         .send()
                         .await
@@ -810,6 +844,14 @@ fn user_play_human() -> Html {
                         set_Div_display("info-prompt", false);
                         set_Div_display("column-prompt", true);
                         set_Div_display("giveup-button-prompt", true);
+                        if board_rule == 0 {
+                            let _ = document()
+                                .get_element_by_id("column-button-reverse")
+                                .unwrap()
+                                .dyn_into::<HtmlButtonElement>()
+                                .unwrap()
+                                .set_attribute("style", "display: none");
+                        }
 
                         let _ = document()
                             .get_element_by_id("board")
@@ -823,6 +865,14 @@ fn user_play_human() -> Html {
                 set_Div_display("info-prompt", false);
                 set_Div_display("column-prompt", true);
                 set_Div_display("giveup-button-prompt", true);
+                if get_input_value("board-rule").parse::<i64>().unwrap() == 0 {
+                    let _ = document()
+                        .get_element_by_id("column-button-reverse")
+                        .unwrap()
+                        .dyn_into::<HtmlButtonElement>()
+                        .unwrap()
+                        .set_attribute("style", "display: none");
+                }
 
                 let _ = document()
                     .get_element_by_id("board")
@@ -864,6 +914,10 @@ fn user_play_human() -> Html {
     });
 
     let makeMove = Callback::from(move |_event: MouseEvent| {
+        if get_input_value("column-number") == "" {
+            return;
+        }
+
         let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
 
         if column < 0 {
@@ -876,6 +930,16 @@ fn user_play_human() -> Html {
         let mode = get_input_value("board-mode");
 
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+
+        let clicked_button = _event
+            .target()
+            .unwrap()
+            .dyn_into::<HtmlButtonElement>()
+            .unwrap()
+            .get_attribute("id")
+            .unwrap();
+        log!(clicked_button.clone());
+        let reverse = clicked_button == "column-button-reverse";
         // Make the move
         let make_move_uri = format!("{}/board/move", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
@@ -897,9 +961,12 @@ fn user_play_human() -> Html {
                         "player_1": get_input_value("player-name1"),
                         "player_2": get_input_value("player-name2"),
                         "mode": pattern,
-                        "difficulty": 1
+                        "difficulty": 1,
+                        "p1_remain": [],
+                        "p2_remain": []
                     },
-                        "col": column}))
+                        "col": column,
+                        "reverse": reverse}))
                 .send()
                 .await
                 .unwrap()
@@ -913,6 +980,20 @@ fn user_play_human() -> Html {
             } else {
                 let human_row = response["human_row"].clone().to_string();
                 let human_column = response["human_col"].clone().to_string();
+                let human_rev = response["human_reverse"].as_bool().unwrap();
+
+                let human_im = if human_rev {
+                    "https://i.ibb.co/dgzxtqp/player2-fill.png"
+                } else {
+                    "https://i.ibb.co/3z2fDPN/player1-fill.png"
+                };
+
+                let human_im_2 = if human_rev {
+                    "https://i.ibb.co/3z2fDPN/player1-fill.png"
+                } else {
+                    "https://i.ibb.co/dgzxtqp/player2-fill.png"
+                };
+
                 if response["player"].as_bool().unwrap() == false {
                     let _ = document()
                         .get_element_by_id(
@@ -921,7 +1002,7 @@ fn user_play_human() -> Html {
                         .unwrap()
                         .dyn_into::<HtmlImageElement>()
                         .unwrap()
-                        .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
+                        .set_attribute("src", human_im);
                 } else {
                     let _ = document()
                         .get_element_by_id(
@@ -930,7 +1011,7 @@ fn user_play_human() -> Html {
                         .unwrap()
                         .dyn_into::<HtmlImageElement>()
                         .unwrap()
-                        .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                        .set_attribute("src", human_im_2);
                 }
 
                 if response["winner"].as_str().unwrap().to_owned().len() != 0 {
@@ -980,9 +1061,12 @@ fn user_play_human() -> Html {
                         "player_1": get_input_value("player-name1"),
                         "player_2": get_input_value("player-name2"),
                         "mode": pattern,
-                        "difficulty": 1
+                        "difficulty": 1,
+                        "p1_remain": [],
+                        "p2_remain": []
                     },
-                        "col": -1}))
+                        "col": -1,
+                        "reverse": false}))
                 .send()
                 .await
                 .unwrap()
@@ -1016,7 +1100,7 @@ fn user_play_human() -> Html {
                     <div class="flex-container">
                         <input id="player-name1" placeholder="Your name" style="margin-left: 0px" readonly=false/>
                         <input id="player-pwd1" placeholder="Password" type = "password" readonly=false/>
-                        <input id="player-name2" placeholder="Your name" style="margin-left: 0px" readonly=false/>
+                        <input id="player-name2" placeholder="Your name" readonly=false/>
                         <input id="player-pwd2" placeholder="Password" type = "password" readonly=false/>
                         <button class="button" onclick={login_onclick}>{ "Start game" }</button>
                     </div>
@@ -1036,7 +1120,14 @@ fn user_play_human() -> Html {
                         <div id="mode-prompt">
                             <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
                             <div class="flex-container">
-                                <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                                <input id="board-mode" placeholder="Mode" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                            </div>
+                        </div>
+
+                        <div id="rule-prompt">
+                            <h5 style="padding-top: 72px">{"Enable TOOT rule"}</h5>
+                            <div class="flex-container">
+                                <input id="board-rule" placeholder="0 or 1" type = "number" min = "0" max = "1" readonly=false/>
                                 <button class="button" onclick={generateBoard}>{ "Generate" }</button>
                             </div>
                         </div>
@@ -1044,6 +1135,7 @@ fn user_play_human() -> Html {
                     <ul>
                         <li>{"Height and width: A positive interger."}</li>
                         <li>{"Mode: 4 letters consist of only \"O\" and \"T\"."}</li>
+                        <li>{"Rule: 1 for enabling and 0 for disabling the TOOT rule"}</li>
                     </ul>
                     <h5 id="info-msg" style="color: red; font-weight: normal">{ "" }</h5>
                 </div>
@@ -1052,7 +1144,8 @@ fn user_play_human() -> Html {
                     <h5 style="padding-top: 72px">{"Enter column number to place a checker"}</h5>
                     <div class="flex-container" >
                         <input id="column-number" placeholder="Column number" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
-                        <button id = "column-button" class="button" onclick={makeMove}>{ "Confirm" }</button>
+                        <button id = "column-button" class="button" onclick={makeMove.clone()}>{ "Place My Checker" }</button>
+                        <button id = "column-button-reverse" class="button" onclick={makeMove}>{ "Place Opponent's Checker" }</button>
                     </div>
                 </div>
             </div><br />
