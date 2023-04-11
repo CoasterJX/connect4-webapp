@@ -528,10 +528,10 @@ impl Board {
             return (0, 0);
         }
 
-        if ply == self.difficulty {
-            println!("{:?} & {:?}", reverse, player);
-            println!("{:?}", self.available_moves(reverse, &player));
-        }
+        // if ply == self.difficulty {
+        //     println!("{:?} & {:?}", reverse, player);
+        //     println!("{:?}", self.available_moves(reverse, &player));
+        // }
         
         let ((mut score, next_player), mut mov) = (init_score.get(&player).unwrap(), -1);
 
@@ -564,13 +564,13 @@ impl Board {
                 }
             }
 
-            if ply == self.difficulty {
-                println!("{:?} - {:?}", m, m_score);
-            }
+            // if ply == self.difficulty {
+            //     println!("{:?} - {:?}", m, m_score);
+            // }
 
-            if ply == self.difficulty - 1 {
-                println!("--- {:?} - {:?}", m, m_score);
-            }
+            // if ply == self.difficulty - 1 {
+            //     println!("--- {:?} - {:?}", m, m_score);
+            // }
 
             if player == self.player_1.clone() {
 

@@ -144,19 +144,19 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                 let mut b_sim = b.clone();
 
                 // add a mutation possibility
-                // let (a, bc, c) = (
-                //     b_sim.difficulty.clone(),
-                //     b_sim.difficulty.clone() - 2,
-                //     b_sim.difficulty.clone() - 4
-                // );
-                // b_sim.difficulty = vec![
-                //     a, a, a, a, a, a, a,
-                //     bc, bc,
-                //     c
-                // ].choose(&mut rand::thread_rng()).unwrap().clone();
-                // if b_sim.difficulty < 1 {
-                //     b_sim.difficulty = 1;
-                // }
+                let (a, bc, c) = (
+                    b_sim.difficulty.clone(),
+                    b_sim.difficulty.clone() - 2,
+                    b_sim.difficulty.clone() - 4
+                );
+                b_sim.difficulty = vec![
+                    a, a, a, a, a, a, a,
+                    bc, bc,
+                    c
+                ].choose(&mut rand::thread_rng()).unwrap().clone();
+                if b_sim.difficulty < 1 {
+                    b_sim.difficulty = 1;
+                }
 
                 // get the best move
                 println!("---------- 1st ----------");
