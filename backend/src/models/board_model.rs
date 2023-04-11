@@ -635,6 +635,8 @@ pub struct PerformMoveResponse {
     pub cmput_col: i64,
     pub cmput_reverse: bool,
     pub winner: String,
+    pub p1_remain: Vec<i64>,
+    pub p2_remain: Vec<i64>,
 }
 
 impl PerformMoveResponse {
@@ -645,6 +647,12 @@ impl PerformMoveResponse {
             GeneralStatus::success()
         } else { GeneralStatus::failure(status.1) };
 
+        // let (human_remain, cmput_remain) = if player.eq(&board.player_1) {
+        //     (board.p1_remain.clone(), board.p2_remain.clone())
+        // } else {
+        //     (board.p2_remain.clone(), board.p1_remain.clone())
+        // };
+
         Self {
             status: s,
             player: player.eq(&board.player_2),
@@ -654,7 +662,9 @@ impl PerformMoveResponse {
             cmput_row: cmput_move.0,
             cmput_col: cmput_move.1,
             cmput_reverse: rev.1,
-            winner
+            winner,
+            p1_remain: board.p1_remain.clone(),
+            p2_remain: board.p2_remain.clone(),
         }
     }
 }
