@@ -287,6 +287,9 @@ fn user_play_computer() -> Html {
             finalString += rowFinal;
         }
 
+        let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+        let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
+
         let recover_board_uri = format!("{}/board/info", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
@@ -303,8 +306,8 @@ fn user_play_computer() -> Html {
                     "player_2": "*",
                     "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                     "difficulty": difficulty.clone(),
-                    "p1_remain": [],
-                    "p2_remain": []
+                    "p1_remain": piece_remain.clone(),
+                    "p2_remain": piece_remain.clone()
                 }))
                 .send()
                 .await
@@ -352,7 +355,7 @@ fn user_play_computer() -> Html {
                         set_Div_display("column-prompt", true);
                         set_Div_display("giveup-button-prompt", true);
 
-                        if board_rule == 0 {
+                        if board_rule.clone() == 0 {
                             let _ = document()
                                 .get_element_by_id("column-button-reverse")
                                 .unwrap()
@@ -373,7 +376,7 @@ fn user_play_computer() -> Html {
                 set_Div_display("info-prompt", false);
                 set_Div_display("column-prompt", true);
                 set_Div_display("giveup-button-prompt", true);
-                if get_input_value("board-rule").parse::<i64>().unwrap() == 0 {
+                if board_rule.clone() == 0 {
                     let _ = document()
                         .get_element_by_id("column-button-reverse")
                         .unwrap()
@@ -440,6 +443,9 @@ fn user_play_computer() -> Html {
         let mode = get_input_value("board-mode");
 
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
+
+        let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+        let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
         // Make the move
         let make_move_uri = format!("{}/board/move", BACKEND_URI);
 
@@ -472,8 +478,8 @@ fn user_play_computer() -> Html {
                         "player_2": "*",
                         "mode": pattern,
                         "difficulty": difficulty,
-                        "p1_remain": [],
-                        "p2_remain": []
+                        "p1_remain": piece_remain.clone(),
+                        "p2_remain": piece_remain.clone()
                     },
                         "col": column,
                         "reverse": reverse,
@@ -557,6 +563,9 @@ fn user_play_computer() -> Html {
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
         let difficulty = get_input_value("board-difficulty").parse::<i64>().unwrap() * 2 - 1;
 
+        let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+        let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
+
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
@@ -577,8 +586,8 @@ fn user_play_computer() -> Html {
                         "player_2": "*",
                         "mode": pattern,
                         "difficulty": difficulty,
-                        "p1_remain": [],
-                        "p2_remain": []
+                        "p1_remain": piece_remain.clone(),
+                        "p2_remain": piece_remain.clone()
                     },
                         "col": -1,
                         "reverse": false,
@@ -780,6 +789,9 @@ fn user_play_human() -> Html {
             finalString += rowFinal;
         }
 
+        let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+        let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
+
         let recover_board_uri = format!("{}/board/info", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
@@ -796,8 +808,8 @@ fn user_play_human() -> Html {
                     "player_2": get_input_value("player-name2"),
                     "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                     "difficulty": 1,
-                    "p1_remain": [],
-                    "p2_remain": []
+                    "p1_remain": piece_remain.clone(),
+                    "p2_remain": piece_remain.clone()
                 }))
                 .send()
                 .await
@@ -808,9 +820,6 @@ fn user_play_human() -> Html {
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Recover board failed");
-
-                let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
-                let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
 
                 let create_board_uri = format!("{}/board/create", BACKEND_URI);
                 wasm_bindgen_futures::spawn_local(async move {
@@ -940,6 +949,9 @@ fn user_play_human() -> Html {
             .unwrap();
         log!(clicked_button.clone());
         let reverse = clicked_button == "column-button-reverse";
+
+        let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+        let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
         // Make the move
         let make_move_uri = format!("{}/board/move", BACKEND_URI);
         wasm_bindgen_futures::spawn_local(async move {
@@ -962,8 +974,8 @@ fn user_play_human() -> Html {
                         "player_2": get_input_value("player-name2"),
                         "mode": pattern,
                         "difficulty": 1,
-                        "p1_remain": [],
-                        "p2_remain": []
+                        "p1_remain": piece_remain.clone(),
+                        "p2_remain": piece_remain.clone()
                     },
                         "col": column,
                         "reverse": reverse}))
@@ -1042,6 +1054,8 @@ fn user_play_human() -> Html {
 
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
 
+        let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+        let piece_remain = if board_rule == 1 { vec![6, 6] } else { vec![] };
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
@@ -1062,8 +1076,8 @@ fn user_play_human() -> Html {
                         "player_2": get_input_value("player-name2"),
                         "mode": pattern,
                         "difficulty": 1,
-                        "p1_remain": [],
-                        "p2_remain": []
+                        "p1_remain": piece_remain.clone(),
+                        "p2_remain": piece_remain.clone()
                     },
                         "col": -1,
                         "reverse": false}))
