@@ -59,6 +59,9 @@ impl BoardRepo {
             "difficulty": board_info.difficulty.clone(),
             "width": board_info.width.clone(),
             "height": board_info.height.clone(),
+            "p1_remain.1": {
+                "$exists": board_info.p1_remain.len() == 2
+            }
         };
 
         match self.col.delete_one(filter, None).ok() {
@@ -82,6 +85,9 @@ impl BoardRepo {
             "difficulty": board_info.difficulty.clone(),
             "width": board_info.width.clone(),
             "height": board_info.height.clone(),
+            "p1_remain.1": {
+                "$exists": board_info.p1_remain.len() == 2
+            }
         };
         let board_detail = self.col
             .find_one(filter, None)
