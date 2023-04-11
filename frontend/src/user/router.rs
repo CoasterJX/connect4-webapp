@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use std::{sync::Mutex, thread};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    Element, Event, HtmlDivElement, HtmlHeadingElement, HtmlImageElement, HtmlInputElement,
+    Element, Event, HtmlDivElement, HtmlHeadingElement, HtmlImageElement, HtmlInputElement, HtmlButtonElement,
     MouseEvent,
 };
 use yew::{function_component, html, Callback, Html};
@@ -77,6 +77,7 @@ fn verify_board_setting(mode: &str) -> bool {
     if get_input_value("board-width") == ""
         || get_input_value("board-height") == ""
         || get_input_value("board-mode") == ""
+        || get_input_value("board-rule") == ""
     {
         pass = false;
     }
@@ -296,6 +297,8 @@ fn user_play_computer() -> Html {
                     "player_2": "*",
                     "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                     "difficulty": difficulty.clone(),
+                    "p1_remain": [],
+                    "p2_remain": []
                 }))
                 .send()
                 .await
@@ -306,6 +309,13 @@ fn user_play_computer() -> Html {
 
             if !response["status"]["success"].as_bool().unwrap() {
                 log!("Recover board failed");
+
+                let board_rule = get_input_value("board-rule").parse::<i64>().unwrap();
+                let piece_remain = if board_rule == 1 {
+                    vec![6, 6]
+                } else {
+                    vec![]
+                };
 
                 let create_board_uri = format!("{}/board/create", BACKEND_URI);
                 wasm_bindgen_futures::spawn_local(async move {
@@ -323,7 +333,9 @@ fn user_play_computer() -> Html {
                         "player_2": "*",
                         "mode": get_input_value("board-mode").chars().map(|c| c.eq(&'O')).collect::<Vec<_>>(),
                         "difficulty": difficulty,
-                            }))
+                        "p1_remain": piece_remain.clone(),
+                        "p2_remain": piece_remain.clone(),
+                        }))
                         .send()
                         .await
                         .unwrap()
@@ -390,7 +402,7 @@ fn user_play_computer() -> Html {
         });
     });
 
-    let makeMove = Callback::from(move |_event: MouseEvent| {
+    let makeMove = Callback::from(move |event: MouseEvent| {
         let column = get_input_value("column-number").parse::<i64>().unwrap() - 1;
 
         if column < 0 {
@@ -407,6 +419,10 @@ fn user_play_computer() -> Html {
         let pattern: Vec<bool> = mode.chars().map(|c| c.eq(&'O')).collect();
         // Make the move
         let make_move_uri = format!("{}/board/move", BACKEND_URI);
+
+        let clicked_button = event.target().unwrap().dyn_into::<HtmlButtonElement>().unwrap().get_attribute("id").unwrap();
+        log!(clicked_button.clone());
+        let reverse = clicked_button == "column-button-reverse";
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             let response = client
@@ -426,9 +442,13 @@ fn user_play_computer() -> Html {
                         "player_1": get_input_value("player-name"),
                         "player_2": "*",
                         "mode": pattern,
-                        "difficulty": difficulty
+                        "difficulty": difficulty,
+                        "p1_remain": [],
+                        "p2_remain": []
                     },
-                        "col": column}))
+                        "col": column,
+                        "reverse": reverse,
+                }))
                 .send()
                 .await
                 .unwrap()
@@ -442,6 +462,13 @@ fn user_play_computer() -> Html {
             } else {
                 let human_row = response["human_row"].clone().to_string();
                 let human_column = response["human_col"].clone().to_string();
+                let human_rev = response["human_reverse"].as_bool().unwrap();
+
+                let human_im = if human_rev {
+                    "https://i.ibb.co/dgzxtqp/player2-fill.png"
+                } else {
+                    "https://i.ibb.co/3z2fDPN/player1-fill.png"
+                };
                 let _ = document()
                     .get_element_by_id(
                         format!("{}-{}", human_row.clone(), human_column.clone()).as_str(),
@@ -449,10 +476,17 @@ fn user_play_computer() -> Html {
                     .unwrap()
                     .dyn_into::<HtmlImageElement>()
                     .unwrap()
-                    .set_attribute("src", "https://i.ibb.co/3z2fDPN/player1-fill.png");
+                    .set_attribute("src", human_im);
 
                 let cmput_row = response["cmput_row"].clone().to_string();
                 let cmput_column = response["cmput_col"].clone().to_string();
+                let cmput_rev = response["cmput_reverse"].as_bool().unwrap();
+
+                let cmput_im = if cmput_rev {
+                    "https://i.ibb.co/3z2fDPN/player1-fill.png"
+                } else {
+                    "https://i.ibb.co/dgzxtqp/player2-fill.png"
+                };
 
                 if cmput_row != "-1" {
                     let _ = document()
@@ -462,7 +496,7 @@ fn user_play_computer() -> Html {
                         .unwrap()
                         .dyn_into::<HtmlImageElement>()
                         .unwrap()
-                        .set_attribute("src", "https://i.ibb.co/dgzxtqp/player2-fill.png");
+                        .set_attribute("src", cmput_im);
                 }
 
                 if response["winner"].as_str().unwrap().to_owned().len() != 0 {
@@ -513,9 +547,13 @@ fn user_play_computer() -> Html {
                         "player_1": get_input_value("player-name"),
                         "player_2": "*",
                         "mode": pattern,
-                        "difficulty": difficulty
+                        "difficulty": difficulty,
+                        "p1_remain": [],
+                        "p2_remain": []
                     },
-                        "col": -1}))
+                        "col": -1,
+                        "reverse": false,
+                }))
                 .send()
                 .await
                 .unwrap()
@@ -569,9 +607,18 @@ fn user_play_computer() -> Html {
                             <h5 style="padding-top: 72px">{"Enter pattern"}</h5>
                             <div class="flex-container">
                                 <input id="board-mode" placeholder="Mode" style="margin-left: 0px" type="text" pattern="[OT]" maxlength="4" readonly=false/>
+                                
+                            </div>
+                        </div>
+
+                        <div id="rule-prompt">
+                            <h5 style="padding-top: 72px">{"Enable TOOT rule"}</h5>
+                            <div class="flex-container">
+                                <input id="board-rule" placeholder="0 or 1" style="margin-left: 0px" type = "number" min = "0" max = "1" readonly=false/>
                                 <button class="button" onclick={generateBoard}>{ "Generate" }</button>
                             </div>
                         </div>
+
                     </div>
                     <ul>
                         <li>{"Height and width: A positive interger."}</li>
@@ -585,7 +632,8 @@ fn user_play_computer() -> Html {
                     <h5 style="padding-top: 72px">{"Enter column number to place a checker"}</h5>
                     <div class="flex-container" >
                         <input id="column-number" placeholder="Column number" style="margin-left: 0px" type = "number" min = "1" readonly=false/>
-                        <button id = "column-button" class="button" onclick={makeMove}>{ "Confirm" }</button>
+                        <button id = "column-button" class="button" onclick={makeMove.clone()}>{ "Place My Checker" }</button>
+                        <button id = "column-button-reverse" class="button" onclick={makeMove.clone()}>{ "Place Oppponent Checker" }</button>
                     </div>
                 </div>
             </div><br />

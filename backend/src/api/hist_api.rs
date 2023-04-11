@@ -30,6 +30,7 @@ pub fn get_hist(db: &State<HistRepo>, user: String) -> Result<Json<GetHistRespon
 
     hist.sort_by(|h1, h2| h1.date.cmp(&h2.date));
     hist.dedup_by(|h1, h2| h1.date.eq(&h2.date));
+    hist.reverse();
 
     Ok(Json(GetHistResponse {
         status: GeneralStatus::success(),

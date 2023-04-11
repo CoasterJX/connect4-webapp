@@ -22,7 +22,16 @@ const DRAW_STR: &str = "^";
 #[post("/board/create", data = "<new_board>")]
 pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Json<GeneralBoardResponse>, Status> {
 
-    let board_var = Board::new(new_board.width.clone(), new_board.height.clone(), new_board.player_1.clone(), new_board.player_2.clone(), new_board.mode.clone(), new_board.difficulty.clone());
+    let board_var = Board::new(
+        new_board.width.clone(),
+        new_board.height.clone(),
+        new_board.player_1.clone(),
+        new_board.player_2.clone(),
+        new_board.mode.clone(),
+        new_board.difficulty.clone(),
+        new_board.p1_remain.clone(),
+        new_board.p2_remain.clone()
+    );
     match db.create_board(board_var.clone()) {
 
         true => Ok(Json(GeneralBoardResponse {
@@ -40,9 +49,10 @@ pub fn create_board(db: &State<BoardRepo>, new_board: Json<Board>) -> Result<Jso
 #[post("/board/move", data = "<move_req>")]
 pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -> Result<Json<PerformMoveResponse>, Status> {
 
-    let (board, col) = (
+    let (board, col, reverse) = (
         move_req.board_info.clone(),
-        move_req.col.clone()
+        move_req.col.clone(),
+        move_req.reverse.clone()
     );
 
     match db.get_board(&board) {
@@ -62,21 +72,24 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                     (true, ""),
                     (-1, -1),
                     (-1, -1),
+                    (false, false),
                     winner.clone(),
                     b.last_player.clone(),
                     &b.clone()
                 )));
             }
 
-            if b.allows_move(&col) {
+            println!("{:?}-{:?}-{:?}", col, b.get_next_player().clone(), reverse);
+            if b.allows_move(&col, &b.get_next_player().clone(), &reverse) {
                 let next_player = b.get_next_player();
-                b.perform_move(col.clone(), next_player.clone());
+                b.perform_move(col.clone(), next_player.clone(), &reverse);
             } else {
                 // case when move is invalid
                 return Ok(Json(PerformMoveResponse::new(
-                    (false, "Invalid move: Column exceeds upper bound."),
+                    (false, "Invalid move."),
                     (-1, -1),
                     (-1, -1),
+                    (false, false),
                     "".to_owned(),
                     "".to_owned(),
                     &Board::empty()
@@ -97,6 +110,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         (true, ""),
                         human_move.clone(),
                         (-1, -1),
+                        (reverse.clone(), false),
                         winner.clone(),
                         b.last_player.clone(),
                         &b.clone()
@@ -114,6 +128,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         (true, ""),
                         human_move.clone(),
                         (-1, -1),
+                        (reverse.clone(), false),
                         DRAW_STR.to_owned(),
                         b.last_player.clone(),
                         &b.clone()
@@ -124,6 +139,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             assert!(!b.is_terminal());
 
             // case when the opposite is computer
+            let mut cmput_rev = false;
             if b.get_next_player() == COMPUTER_STR {
                 let mut b_sim = b.clone();
 
@@ -142,15 +158,53 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                     b_sim.difficulty = 1;
                 }
 
-                let (_, best_move) = b_sim.alpha_beta(
+                // get the best move
+                println!("---------- 1st ----------");
+                let (sc1, mut best_move) = b_sim.alpha_beta(
                     b.get_next_player(),
                     i64::MIN,
                     i64::MAX,
-                    b.difficulty
+                    b.difficulty,
+                    &false,
+                    &(b.p1_remain.len() == 2)
                 );
 
+                // if TOOT rule, then make a reverse case as well
+                if b.p1_remain.len() == 2 {
+                    println!("---------- 2nd ----------");
+                    let (sc2, best_move_2) = b.clone().alpha_beta(
+                        b.get_next_player(),
+                        i64::MIN,
+                        i64::MAX,
+                        b.difficulty,
+                        &true,
+                        &true
+                    );
+
+                    println!("b1: {:?}, b2: {:?}", best_move, best_move_2);
+
+                    // choose optimum one
+                    if sc1 > sc2 {
+                        println!("Reverse is better");
+                        best_move = best_move_2.clone();
+                        cmput_rev = true;
+                    } else if sc1 == sc2 {
+                        println!("Either is OK");
+                        cmput_rev = vec![false, true].choose(&mut rand::thread_rng()).unwrap().clone();
+                        println!("{:?}", cmput_rev);
+                        if cmput_rev {
+                            best_move = best_move_2.clone();
+                        }
+                        // best_move = vec![best_move.clone(), best_move_2.clone()]
+                        //     .choose(&mut rand::thread_rng()).unwrap().clone();
+                    } else {
+                        println!("Normal is better");
+                    }
+                }
+
                 let next_player = b.get_next_player();
-                b.perform_move(best_move.clone(), next_player.clone());
+                println!("Move to {:?}", best_move.clone());
+                b.perform_move(best_move.clone(), next_player.clone(), &cmput_rev);
             } else {
                 b.last_row = -1;
                 b.last_col = -1;
@@ -170,6 +224,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         (true, ""),
                         human_move.clone(),
                         cmput_move.clone(),
+                        (reverse.clone(), cmput_rev.clone()),
                         winner.clone(),
                         b.last_player.clone(),
                         &b.clone()
@@ -187,6 +242,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                         (true, ""),
                         human_move.clone(),
                         cmput_move.clone(),
+                        (reverse.clone(), cmput_rev.clone()),
                         DRAW_STR.to_owned(),
                         b.last_player.clone(),
                         &b.clone()
@@ -202,6 +258,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                     (true, ""),
                     human_move.clone(),
                     cmput_move.clone(),
+                    (reverse.clone(), cmput_rev.clone()),
                     "".to_owned(),
                     b.last_player.clone(),
                     &b.clone()
@@ -210,6 +267,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
                     (false, "Database not connected."),
                     human_move.clone(),
                     cmput_move.clone(),
+                    (reverse.clone(), cmput_rev.clone()),
                     "".to_owned(),
                     b.last_player.clone(),
                     &b.clone()
@@ -222,6 +280,7 @@ pub fn perform_move(db: &State<BoardRepo>, move_req: Json<PerformMoveRequest>) -
             (false, "Board does not exist or database not connected."),
             (-1, -1),
             (-1, -1),
+            (false, false),
             "".to_owned(),
             "".to_owned(),
             &Board::empty()
