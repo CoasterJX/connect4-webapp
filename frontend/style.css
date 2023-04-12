@@ -105,7 +105,7 @@ table, th, td {
     top: 0; /* Stay at the top */
     left: 0;
     /* background-color: #f44336; */
-    background-color: black;
+    background-color: #276a84;
     overflow-x: hidden; /* Disable horizontal scroll */
     padding-top: 20px;
     padding-left: 24px;
@@ -141,7 +141,7 @@ table, th, td {
   
   /* When you mouse over the navigation links, change their color */
   .sidenav a:hover {
-    color: black;
+    color: rgb(225, 140, 160);
     background-color: white;
   }
   
