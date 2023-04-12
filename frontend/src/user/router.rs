@@ -137,6 +137,11 @@ fn user_register() -> Html {
         let name_input = get_input_value("register-name");
         let pwd_input = get_input_value("register-pwd");
 
+        if name_input == "" || pwd_input == "" {
+            set_heading_message("register-msg", "Register failed! Do not leave boxes blank.");
+            return;
+        }
+
         if name_input.contains("_") {
             set_heading_message(
                 "register-msg",
