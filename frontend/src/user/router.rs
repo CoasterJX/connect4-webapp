@@ -438,7 +438,7 @@ fn user_play_computer() -> Html {
 
         let difficulty = get_input_value("board-difficulty").parse::<i64>().unwrap() * 2 - 1;
 
-        set_heading_message("winner-msg", "");
+        set_heading_message("winner-msg", "Computer is thinking");
 
         let mode = get_input_value("board-mode");
 
@@ -523,6 +523,8 @@ fn user_play_computer() -> Html {
                     "https://i.ibb.co/dgzxtqp/player2-fill.png"
                 };
 
+                set_heading_message("winner-msg", "");
+
                 if cmput_row != "-1" {
                     let _ = document()
                         .get_element_by_id(
@@ -532,6 +534,44 @@ fn user_play_computer() -> Html {
                         .dyn_into::<HtmlImageElement>()
                         .unwrap()
                         .set_attribute("src", cmput_im);
+                }
+
+                if board_rule.clone() == 1 {
+                    let p1_remain_self = response["p1_remain"].as_array().unwrap()[0]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+                    let p1_remain_opponent = response["p1_remain"].as_array().unwrap()[1]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+
+                    let p2_remain_self = response["p2_remain"].as_array().unwrap()[0]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+                    let p2_remain_opponent = response["p2_remain"].as_array().unwrap()[1]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+
+                    set_heading_message(
+                        "player1-remain",
+                        format!(
+                            "Player 1: player 1's checker: {} opponent's checker: {}",
+                            p1_remain_self, p1_remain_opponent
+                        )
+                        .as_str(),
+                    );
+
+                    set_heading_message(
+                        "player2-remain",
+                        format!(
+                            "Player 2: player 2's checker: {} opponent's checker: {}",
+                            p2_remain_self, p2_remain_opponent
+                        )
+                        .as_str(),
+                    )
                 }
 
                 if response["winner"].as_str().unwrap().to_owned().len() != 0 {
@@ -682,6 +722,8 @@ fn user_play_computer() -> Html {
             </div>
 
             <h5 id="winner-msg" style="font-weight: normal">{ "" }</h5>
+            <h5 id="player1-remain" style="font-weight: normal">{ "" }</h5>
+            <h5 id="player2-remain" style="font-weight: normal">{ "" }</h5>
 
             <div id = "giveup-button-prompt"  style="display: none">
                 <button id = "giveup-button" style="margin-left: 0px" class="button" onclick={giveup}>{ "Giveup" }</button>
@@ -1026,6 +1068,44 @@ fn user_play_human() -> Html {
                         .set_attribute("src", human_im_2);
                 }
 
+                if board_rule.clone() == 1 {
+                    let p1_remain_self = response["p1_remain"].as_array().unwrap()[0]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+                    let p1_remain_opponent = response["p1_remain"].as_array().unwrap()[1]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+
+                    let p2_remain_self = response["p2_remain"].as_array().unwrap()[0]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+                    let p2_remain_opponent = response["p2_remain"].as_array().unwrap()[1]
+                        .clone()
+                        .as_i64()
+                        .unwrap();
+
+                    set_heading_message(
+                        "player1-remain",
+                        format!(
+                            "Player 1: player 1's checker: {} opponent's checker: {}",
+                            p1_remain_self, p1_remain_opponent
+                        )
+                        .as_str(),
+                    );
+
+                    set_heading_message(
+                        "player2-remain",
+                        format!(
+                            "Player 2: player 2's checker: {} opponent's checker: {}",
+                            p2_remain_self, p2_remain_opponent
+                        )
+                        .as_str(),
+                    )
+                }
+
                 if response["winner"].as_str().unwrap().to_owned().len() != 0 {
                     let mut winner = String::new();
                     if response["winner"].as_str().unwrap().to_owned() == "*".to_owned() {
@@ -1169,6 +1249,8 @@ fn user_play_human() -> Html {
             </div>
 
             <h5 id="winner-msg" style="font-weight: normal">{ "" }</h5>
+            <h5 id="player1-remain" style="font-weight: normal">{ "" }</h5>
+            <h5 id="player2-remain" style="font-weight: normal">{ "" }</h5>
 
             <div id = "giveup-button-prompt"  style="display: none">
                 <button id = "giveup-button" style="margin-left: 0px" class="button" onclick={giveup}>{ "Giveup" }</button>
