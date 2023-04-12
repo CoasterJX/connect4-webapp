@@ -68,7 +68,11 @@ impl UserRepo {
             .ok();
         
         match cursors {
-            Some(c) => Some(c.map(|doc| doc.unwrap()).collect()),
+            Some(c) => {
+                let mut all_users: Vec<User> = c.map(|doc| doc.unwrap()).collect();
+                all_users.sort_by(|c1, c2| c2.score.cmp(&c1.score));
+                Some(all_users)
+            },
             None => None,
         }
     }
