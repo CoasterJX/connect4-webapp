@@ -1,1 +1,1 @@
-pub const BACKEND_URI: &str = "http://localhost:8000";
+pub const BACKEND_URI: &str = "http://0.0.0.0:8000";
